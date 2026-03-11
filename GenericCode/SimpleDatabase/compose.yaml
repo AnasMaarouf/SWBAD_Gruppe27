@@ -1,0 +1,28 @@
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: sqlserver2025
+    restart: "no"
+
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Abcd123456!"
+      MSSQL_PID: "Developer"
+
+    ports:
+      - "1433:1433"
+    
+    # Kept commented as data is not needed to be saved for the demonstrated.
+    volumes:
+      - sqlserver_data:/home/anasmaarouf/Desktop/SW4BAD/Assignment 2/SourceCode/DB/
+
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+
+# Kept commented as data is not needed to be saved for the demonstrated.
+volumes:
+  sqlserver_data:
+
