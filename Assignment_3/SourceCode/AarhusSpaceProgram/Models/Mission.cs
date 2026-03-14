@@ -1,27 +1,16 @@
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.CodeAnalysis;
-using System.ComponentModel.DataAnnotations.Schema;
-public class Mission {
-    
 
-}
 
-[Table("CelestialBodies")]
-public class CelestialBodies {
-    [Key]
-    public string ID {get; set;}
-    [NotNull]
-    public string Name {get; set;}
-
-    [NotNull]
-    public int Distance {get; set;}
-    
-    [NotNull]
-    public string BodyType {get; set;}
-    
-    [NotNull]
-    public string PlanetType {get; set;}
-
-    [ForeignKey("ID")]
-    public string MoonID {get; set;}
+public class Mission
+{
+    public int ID { get; set; }  // Primary Key for Mission
+    public string Name { get; set; }
+    public int Duration { get; set; }
+    public string CurrentStatus { get; set; }
+    public string Type { get; set; }
+    public DateOnly LaunchDate { get; set; }
+    public Rocket Rocket { get; set; }  // Navigation to Rocket
+    public Launchpad Launchpad { get; set; }  // Navigation to Launchpad
+    public Crew Crew { get; set; }  // Navigation to Crew
+    public Manager Manager { get; set; }  // Navigation to Manager
+    public CelestialBody CelestialBody { get; set; }  // Navigation to CelestialBody (destination)
 }
