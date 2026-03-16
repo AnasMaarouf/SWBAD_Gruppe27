@@ -68,12 +68,6 @@ public class MyDBContext : DbContext {
                 .HasColumnType("DATE")
                 .IsRequired();
 
-            // Department relationship
-            entity.HasOne(e => e.Department)
-                .WithMany()
-                .HasForeignKey(e => e.FK_DepartmentID)
-                .OnDelete(DeleteBehavior.SetNull);
-
         });
 
         // Model builder for Manager
