@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 public class MyDBContext : DbContext {
 	private const string DbName = "EFGetStarted";
@@ -82,6 +84,7 @@ public class MyDBContext : DbContext {
             entity.HasOne(m => m.Employee)
                 .WithOne(e => e.Manager)
                 .HasForeignKey<Manager>(m => m.ID);
+            
         });
 
         // Model builder for Astronaut
@@ -96,6 +99,7 @@ public class MyDBContext : DbContext {
             entity.HasOne(a => a.Employee)
                 .WithOne(e => e.Astronaut)
                 .HasForeignKey<Astronaut>(a => a.ID);
+            
         });
 
         // Model builder for Scientist
@@ -110,6 +114,29 @@ public class MyDBContext : DbContext {
             entity.HasOne(s => s.Employee)
                 .WithOne(e => e.Scientist)
                 .HasForeignKey<Scientist>(s => s.ID);
+
+        });
+
+
+        // JOINTS
+        // Astronaut & Crew joint
+        modelBuilder.Entity<Joint_Astronaut_Crew>(entity => {
+            entity.Property(AC => AC.AstronautID)
+                .HasColumnType("INT").IsRequired();
+
+            entity.HasOne(AC => AC.astronaut)
+                .WithMany(A => A.joint_Astronaut_Crew)
+                .HasForeignKey(AC => AC.AstronautID);
+
+
+            entity.Property(AC => AC.CrewID)
+                .HasColumnType("INT")
+                .IsRequired();
+
+            entity.HasOne(AC => AC.crew)
+            .WithMany(C => C.joint_Astronaut_Crew)
+            .HasForeignKey(AC => AC.CrewID);
+
         });
     }
 }
