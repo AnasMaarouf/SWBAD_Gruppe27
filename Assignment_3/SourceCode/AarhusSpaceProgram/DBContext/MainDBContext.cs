@@ -51,7 +51,8 @@ public class MyDBContext : DbContext {
             // Self-referencing relationship
             entity.HasOne(moon => moon.ParentPlanet)
                 .WithMany(planet => planet.Moons)
-                .HasForeignKey(moon => moon.FK_ParentPlanetID);
+                .HasForeignKey(moon => moon.FK_ParentPlanetID)
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
 
@@ -84,7 +85,8 @@ public class MyDBContext : DbContext {
 
             entity.HasOne(m => m.Employee)
                 .WithOne(e => e.Manager)
-                .HasForeignKey<Manager>(m => m.ID);
+                .HasForeignKey<Manager>(m => m.ID)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Model builder for Astronaut
@@ -98,7 +100,8 @@ public class MyDBContext : DbContext {
 
             entity.HasOne(a => a.Employee)
                 .WithOne(e => e.Astronaut)
-                .HasForeignKey<Astronaut>(a => a.ID);
+                .HasForeignKey<Astronaut>(a => a.ID)
+                .OnDelete(DeleteBehavior.Cascade);
             
         });
 
@@ -113,7 +116,8 @@ public class MyDBContext : DbContext {
 
             entity.HasOne(s => s.Employee)
                 .WithOne(e => e.Scientist)
-                .HasForeignKey<Scientist>(s => s.ID);
+                .HasForeignKey<Scientist>(s => s.ID)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
 
@@ -148,7 +152,8 @@ public class MyDBContext : DbContext {
                 .IsRequired();
             entity.HasOne(D => D.manager)
                 .WithMany(M => M.Departments)
-                .HasForeignKey(D => D.FK_managerID);
+                .HasForeignKey(D => D.FK_managerID)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Model builder for Launchpad.
@@ -204,7 +209,8 @@ public class MyDBContext : DbContext {
 
             // Name variable constraints.
             entity.Property(M => M.Type)
-                .HasColumnType("NVARCHAR(100)");
+                .HasColumnType("NVARCHAR(100)")
+                .IsRequired();
 
             // Launchdate variable constraints
             entity.Property(M => M.LaunchDate)
@@ -212,27 +218,28 @@ public class MyDBContext : DbContext {
 
             // Foreign Key for Rocket, variable constraints.
             entity.Property(M => M.FK_RocketID)
-                .HasColumnType("INT")
-                .IsRequired();
+                .HasColumnType("INT");
             entity.HasOne(M => M.AssignedRocket)
                 .WithOne(R => R.Mission)
-                .HasForeignKey<Mission>(M => M.FK_RocketID);
+                .HasForeignKey<Mission>(M => M.FK_RocketID)
+                .OnDelete(DeleteBehavior.SetNull);
     
             // Foreign Key for Launchpad, variable constraints.
             entity.Property(M => M.FK_launchpadID)
-                .HasColumnType("INT")
-                .IsRequired();
+                .HasColumnType("INT");
             entity.HasOne(M => M.launchpad)
                 .WithMany(L => L.Missions)
-                .HasForeignKey(M => M.FK_launchpadID);
+                .HasForeignKey(M => M.FK_launchpadID)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // Foreign Key for Crew, variable constraints.
             entity.Property(M => M.FK_CrewID)
-                .HasColumnType("INT")
-                .IsRequired();
+                .HasColumnType("INT");
+
             entity.HasOne(M => M.crew)
                 .WithMany(C => C.Missions)
-                .HasForeignKey(M => M.FK_CrewID);
+                .HasForeignKey(M => M.FK_CrewID)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // Foreign Key for Manager, variable constraints.
             entity.Property(M => M.FK_ManagerID)
@@ -240,15 +247,16 @@ public class MyDBContext : DbContext {
                 .IsRequired();
             entity.HasOne(Miss => Miss.manager)
                 .WithMany(Man => Man.Missions)
-                .HasForeignKey(Miss => Miss.FK_ManagerID);
+                .HasForeignKey(Miss => Miss.FK_ManagerID)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Foreign Key for CelestialBody, variable constraints.
             entity.Property(M => M.FK_CelestialID)
-                .HasColumnType("INT")
-                .IsRequired();
+                .HasColumnType("INT");
             entity.HasOne(M => M.celestialBody)
                 .WithMany(C => C.Missions)
-                .HasForeignKey(Miss => Miss.FK_CelestialID);
+                .HasForeignKey(Miss => Miss.FK_CelestialID)
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
 
@@ -291,13 +299,6 @@ public class MyDBContext : DbContext {
         // JOINTS
         // Astronaut & Crew joint
         modelBuilder.Entity<Joint_Astronaut_Crew>(entity => {
-            // Astronaut foreignkey
-            entity.Property(AC => AC.AstronautID)
-                .HasColumnType("INT").IsRequired();
-            entity.HasOne(AC => AC.astronaut)
-                .WithMany(A => A.joint_Astronaut_Crew)
-                .HasForeignKey(AC => AC.AstronautID);
-
             // Crew foreignkey and as primary key
             entity.HasKey(AC => AC.CrewID);
             entity.Property(AC => AC.CrewID)
@@ -305,18 +306,21 @@ public class MyDBContext : DbContext {
                 .IsRequired();
             entity.HasOne(AC => AC.crew)
                 .WithMany(C => C.joint_Astronaut_Crew)
-                .HasForeignKey(AC => AC.CrewID);
+                .HasForeignKey(AC => AC.CrewID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Astronaut foreignkey
+            entity.Property(AC => AC.AstronautID)
+                .HasColumnType("INT")
+                .IsRequired();
+            entity.HasOne(AC => AC.astronaut)
+                .WithMany(A => A.joint_Astronaut_Crew)
+                .HasForeignKey(AC => AC.AstronautID)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Scientist & Mission joint (for Many-To-Many Relationship)
         modelBuilder.Entity<Joint_Scientist_Mission>(entity => {
-            // Scientist foreignkey
-            entity.Property(SM => SM.ScientistID)
-                .HasColumnType("INT").IsRequired();
-            entity.HasOne(SM => SM.scientist)
-                .WithMany(S => S.joint_scientist_missions)
-                .HasForeignKey(AC => AC.ScientistID);
-
             // Mission foreignkey and as primary key
             entity.HasKey(SM => SM.MissionID);
             entity.Property(SM => SM.MissionID)
@@ -324,7 +328,17 @@ public class MyDBContext : DbContext {
                 .IsRequired();
             entity.HasOne(SM => SM.mission)
                 .WithMany(M => M.joint_scientist_missions)
-                .HasForeignKey(SM => SM.MissionID);
+                .HasForeignKey(SM => SM.MissionID)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            // Scientist foreignkey
+            entity.Property(SM => SM.ScientistID)
+                .HasColumnType("INT")
+                .IsRequired();
+            entity.HasOne(SM => SM.scientist)
+                .WithMany(S => S.joint_scientist_missions)
+                .HasForeignKey(AC => AC.ScientistID)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -70,7 +70,7 @@ namespace AarhusSpaceProgram.Migrations
                     FuelCapacity = table.Column<int>(type: "INT", nullable: false),
                     CrewCapacity = table.Column<int>(type: "INT", nullable: false),
                     NumberOfStages = table.Column<int>(type: "INT", nullable: false),
-                    TotalWeight = table.Column<int>(type: "INT", nullable: false)
+                    TotalWeight = table.Column<int>(type: "INT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -197,11 +197,11 @@ namespace AarhusSpaceProgram.Migrations
                     CurrentStatus = table.Column<string>(type: "NVARCHAR(100)", nullable: false),
                     Type = table.Column<string>(type: "NVARCHAR(100)", nullable: false),
                     LaunchDate = table.Column<DateOnly>(type: "DATE", nullable: false),
-                    FK_RocketID = table.Column<int>(type: "INT", nullable: false),
-                    FK_launchpadID = table.Column<int>(type: "INT", nullable: false),
-                    FK_CrewID = table.Column<int>(type: "INT", nullable: false),
+                    FK_RocketID = table.Column<int>(type: "INT", nullable: true),
+                    FK_launchpadID = table.Column<int>(type: "INT", nullable: true),
+                    FK_CrewID = table.Column<int>(type: "INT", nullable: true),
                     FK_ManagerID = table.Column<int>(type: "INT", nullable: false),
-                    FK_CelestialID = table.Column<int>(type: "INT", nullable: false)
+                    FK_CelestialID = table.Column<int>(type: "INT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -210,32 +210,31 @@ namespace AarhusSpaceProgram.Migrations
                         name: "FK_Missions_CelestialBodies_FK_CelestialID",
                         column: x => x.FK_CelestialID,
                         principalTable: "CelestialBodies",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Missions_Crews_FK_CrewID",
                         column: x => x.FK_CrewID,
                         principalTable: "Crews",
                         principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_Missions_Launchpads_FK_launchpadID",
                         column: x => x.FK_launchpadID,
                         principalTable: "Launchpads",
                         principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_Missions_Managers_FK_ManagerID",
                         column: x => x.FK_ManagerID,
                         principalTable: "Managers",
                         principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Missions_Rockets_FK_RocketID",
                         column: x => x.FK_RocketID,
                         principalTable: "Rockets",
                         principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
@@ -311,7 +310,8 @@ namespace AarhusSpaceProgram.Migrations
                 name: "IX_Missions_FK_RocketID",
                 table: "Missions",
                 column: "FK_RocketID",
-                unique: true);
+                unique: true,
+                filter: "[FK_RocketID] IS NOT NULL");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Astronauts_Emplyees_ID",
@@ -327,7 +327,7 @@ namespace AarhusSpaceProgram.Migrations
                 column: "FK_managerID",
                 principalTable: "Managers",
                 principalColumn: "ID",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.Restrict);
         }
 
         /// <inheritdoc />

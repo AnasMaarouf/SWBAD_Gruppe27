@@ -217,19 +217,19 @@ namespace AarhusSpaceProgram.Migrations
                     b.Property<int>("Duration")
                         .HasColumnType("INT");
 
-                    b.Property<int>("FK_CelestialID")
+                    b.Property<int?>("FK_CelestialID")
                         .HasColumnType("INT");
 
-                    b.Property<int>("FK_CrewID")
+                    b.Property<int?>("FK_CrewID")
                         .HasColumnType("INT");
 
                     b.Property<int>("FK_ManagerID")
                         .HasColumnType("INT");
 
-                    b.Property<int>("FK_RocketID")
+                    b.Property<int?>("FK_RocketID")
                         .HasColumnType("INT");
 
-                    b.Property<int>("FK_launchpadID")
+                    b.Property<int?>("FK_launchpadID")
                         .HasColumnType("INT");
 
                     b.Property<DateOnly>("LaunchDate")
@@ -252,7 +252,8 @@ namespace AarhusSpaceProgram.Migrations
                     b.HasIndex("FK_ManagerID");
 
                     b.HasIndex("FK_RocketID")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[FK_RocketID] IS NOT NULL");
 
                     b.HasIndex("FK_launchpadID");
 
@@ -280,7 +281,7 @@ namespace AarhusSpaceProgram.Migrations
                     b.Property<int>("NumberOfStages")
                         .HasColumnType("INT");
 
-                    b.Property<int>("TotalWeight")
+                    b.Property<int?>("TotalWeight")
                         .HasColumnType("INT");
 
                     b.HasKey("ID");
@@ -321,7 +322,8 @@ namespace AarhusSpaceProgram.Migrations
                 {
                     b.HasOne("CelestialBody", "ParentPlanet")
                         .WithMany("Moons")
-                        .HasForeignKey("FK_ParentPlanetID");
+                        .HasForeignKey("FK_ParentPlanetID")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("ParentPlanet");
                 });
@@ -331,7 +333,7 @@ namespace AarhusSpaceProgram.Migrations
                     b.HasOne("Manager", "manager")
                         .WithMany("Departments")
                         .HasForeignKey("FK_managerID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("manager");
@@ -400,32 +402,28 @@ namespace AarhusSpaceProgram.Migrations
                     b.HasOne("CelestialBody", "celestialBody")
                         .WithMany("Missions")
                         .HasForeignKey("FK_CelestialID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("Crew", "crew")
                         .WithMany("Missions")
                         .HasForeignKey("FK_CrewID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Manager", "manager")
                         .WithMany("Missions")
                         .HasForeignKey("FK_ManagerID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Rocket", "AssignedRocket")
                         .WithOne("Mission")
                         .HasForeignKey("Mission", "FK_RocketID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Launchpad", "launchpad")
                         .WithMany("Missions")
                         .HasForeignKey("FK_launchpadID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("AssignedRocket");
 
@@ -496,8 +494,7 @@ namespace AarhusSpaceProgram.Migrations
 
             modelBuilder.Entity("Rocket", b =>
                 {
-                    b.Navigation("Mission")
-                        .IsRequired();
+                    b.Navigation("Mission");
                 });
 
             modelBuilder.Entity("Scientist", b =>
