@@ -1,5 +1,4 @@
-public class Employee
-{
+public class Employee {
     public int ID { get; set; }  // Primary
     public string FullName { get; set; }
     public DateOnly HireDate { get; set; }

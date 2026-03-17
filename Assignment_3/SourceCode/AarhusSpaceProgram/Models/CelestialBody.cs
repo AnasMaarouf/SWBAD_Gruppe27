@@ -1,5 +1,4 @@
-public class CelestialBody
-{
+public class CelestialBody {
     public int ID { get; set; }  // Primary Key for CelestialBody
     public string Name { get; set; }
     public decimal Distance { get; set; }
@@ -8,5 +7,6 @@ public class CelestialBody
     public int? FK_ParentPlanetID { get; set; }  // Navigation to parent planet
     public CelestialBody? ParentPlanet { get; set; }  // Navigation to parent planet
     public ICollection<CelestialBody>? Moons { get; set; }  // Navigation to parent planet
+    public ICollection<Mission>? Missions { get; set; }  // Navigation to parent planet
 }
 

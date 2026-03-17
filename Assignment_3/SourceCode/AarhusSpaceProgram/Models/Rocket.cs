@@ -6,4 +6,5 @@ public class Rocket
     public int CrewCapacity { get; set; }
     public int NumberOfStages { get; set; }
     public int TotalWeight { get; set; }
+    public Mission Mission { get; set; }
 }
