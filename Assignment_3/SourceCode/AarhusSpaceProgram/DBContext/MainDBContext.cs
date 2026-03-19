@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-public class MyDBContext : DbContext {
+public class MainDBContext : DbContext {
 	private const string DbName = "AarhusSpaceProgram";
     private const string ConnectionString = $"Data Source=localhost;Initial Catalog={DbName};User ID=sa;Password=Abcd123456!;Connect Timeout=30;Encrypt=True;Trust Server Certificate=True;Authentication=SqlPassword;Application Intent=ReadWrite;";
     protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlServer(ConnectionString);
@@ -202,9 +202,9 @@ public class MyDBContext : DbContext {
                 .HasColumnType("INT")
                 .IsRequired();
 
-            // Current status variable constraints.
+            // Current mission status variable constraints.
             entity.Property(M => M.CurrentStatus)
-                .HasColumnType("NVARCHAR(100)")
+                .HasColumnType("int")
                 .IsRequired();
 
             // Name variable constraints.

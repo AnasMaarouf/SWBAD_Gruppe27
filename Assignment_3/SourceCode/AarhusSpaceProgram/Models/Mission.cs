@@ -1,11 +1,10 @@
 
 
-
 public class Mission {
     public int ID { get; set; }  // Primary Key for Mission
     public string Name { get; set; }
     public int Duration { get; set; }
-    public string CurrentStatus { get; set; }
+    public int CurrentStatus { get; set; }
     public string Type { get; set; }
     public DateOnly LaunchDate { get; set; }
     
@@ -22,8 +21,8 @@ public class Mission {
     public Crew? crew { get; set; }  // Navigation to Crew
     
     // Foreign Key for manager.
-    public int? FK_ManagerID { get; set; }
-    public Manager? manager { get; set; }  // Navigation to Manager
+    public int FK_ManagerID { get; set; }
+    public Manager manager { get; set; }  // Navigation to Manager
     
     // Foreign Key for celestialBody.
     public int? FK_CelestialID { get; set; }
@@ -31,4 +30,15 @@ public class Mission {
 
     // Navigation property for the joint between mission and scientist (Many-To-Many Relationship).
     public ICollection<Joint_Scientist_Mission>? joint_scientist_missions {get; set;}
+
+    public enum Status : int {
+        Created = 0,
+        Budgeted,
+        Approved,
+        Planned,
+        Active,
+        Completed,
+        Aborted,
+        Failed
+    }
 }
