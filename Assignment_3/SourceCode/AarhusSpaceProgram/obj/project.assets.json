@@ -832,6 +832,22 @@
           }
         }
       },
+      "Scalar.AspNetCore/2.13.13": {
+        "type": "package",
+        "compile": {
+          "lib/net10.0/Scalar.AspNetCore.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/Scalar.AspNetCore.dll": {
+            "related": ".xml"
+          }
+        },
+        "frameworkReferences": [
+          "Microsoft.AspNetCore.App"
+        ]
+      },
       "System.ClientModel/1.5.1": {
         "type": "package",
         "dependencies": {
@@ -2790,6 +2806,25 @@
         "packageIcon.png"
       ]
     },
+    "Scalar.AspNetCore/2.13.13": {
+      "sha512": "QS94/CNp2thhykXwBaOHjDe8Zlexs8v0QOrdLfUvxS85uW84IhCf1zGiOnYZNNtVxunJvtsr7yPgEP36TXnJ3w==",
+      "type": "package",
+      "path": "scalar.aspnetcore/2.13.13",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "icon.png",
+        "lib/net10.0/Scalar.AspNetCore.dll",
+        "lib/net10.0/Scalar.AspNetCore.xml",
+        "lib/net8.0/Scalar.AspNetCore.dll",
+        "lib/net8.0/Scalar.AspNetCore.xml",
+        "lib/net9.0/Scalar.AspNetCore.dll",
+        "lib/net9.0/Scalar.AspNetCore.xml",
+        "scalar.aspnetcore.2.13.13.nupkg.sha512",
+        "scalar.aspnetcore.nuspec"
+      ]
+    },
     "System.ClientModel/1.5.1": {
       "sha512": "k2jKSO0X45IqhVOT9iQB4xralNN9foRQsRvXBTyRpAVxyzCJlG895T9qYrQWbcJ6OQXxOouJQ37x5nZH5XKK+A==",
       "type": "package",
@@ -3149,23 +3184,24 @@
       "Microsoft.AspNetCore.OpenApi >= 10.0.4",
       "Microsoft.EntityFrameworkCore.Design >= 10.0.4",
       "Microsoft.EntityFrameworkCore.SqlServer >= 10.0.4",
-      "Microsoft.EntityFrameworkCore.Tools >= 10.0.4"
+      "Microsoft.EntityFrameworkCore.Tools >= 10.0.4",
+      "Scalar.AspNetCore >= 2.13.13"
     ]
   },
   "packageFolders": {
-    "/home/anasmaarouf/.nuget/packages/": {}
+    "C:\\Users\\Perso\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/anasmaarouf/Desktop/SW4BAD/Assignment 3/SWBAD_Gruppe27/Assignment_3/SourceCode/AarhusSpaceProgram/AarhusSpaceProgram.csproj",
+      "projectUniqueName": "C:\\Users\\Perso\\Desktop\\SWBAD\\SWBAD_Gruppe27\\Assignment_3\\SourceCode\\AarhusSpaceProgram\\AarhusSpaceProgram.csproj",
       "projectName": "AarhusSpaceProgram",
-      "projectPath": "/home/anasmaarouf/Desktop/SW4BAD/Assignment 3/SWBAD_Gruppe27/Assignment_3/SourceCode/AarhusSpaceProgram/AarhusSpaceProgram.csproj",
-      "packagesPath": "/home/anasmaarouf/.nuget/packages/",
-      "outputPath": "/home/anasmaarouf/Desktop/SW4BAD/Assignment 3/SWBAD_Gruppe27/Assignment_3/SourceCode/AarhusSpaceProgram/obj/",
+      "projectPath": "C:\\Users\\Perso\\Desktop\\SWBAD\\SWBAD_Gruppe27\\Assignment_3\\SourceCode\\AarhusSpaceProgram\\AarhusSpaceProgram.csproj",
+      "packagesPath": "C:\\Users\\Perso\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Perso\\Desktop\\SWBAD\\SWBAD_Gruppe27\\Assignment_3\\SourceCode\\AarhusSpaceProgram\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/home/anasmaarouf/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\Perso\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
@@ -3214,6 +3250,10 @@
             "suppressParent": "All",
             "target": "Package",
             "version": "[10.0.4, )"
+          },
+          "Scalar.AspNetCore": {
+            "target": "Package",
+            "version": "[2.13.13, )"
           }
         },
         "imports": [
@@ -3235,7 +3275,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.201/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.200/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

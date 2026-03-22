@@ -23,7 +23,7 @@ public class LaunchpadsController : ControllerBase
         }).ToListAsync();
     }
 
-    // GET: api/celestialBodies/{id}
+    // GET: api/Launchpads/{id}
     // Gets launchpad from id (primary key)
     [HttpGet("{id}")]
     public async Task<ActionResult<object>> GetLaunchpad(int id) {
@@ -70,6 +70,7 @@ public class LaunchpadsController : ControllerBase
 
         if(launchpad.MaxSupportedWeight < 0)
             return BadRequest("ERROR!: Launchpad.MaxSupportedWeight: Value cannot be negative!");
+
 
         _context.Entry(launchpad).State = EntityState.Modified;
 

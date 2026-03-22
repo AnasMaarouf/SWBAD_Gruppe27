@@ -32,7 +32,25 @@ public class AstronautsController : ControllerBase
         if (astronaut == null)
             return NotFound();
 
-        return astronaut;
+        return Ok(astronaut);
+    }
+
+    [HttpGet("OrderByExperience")]
+    public async Task<ActionResult<Astronaut>> GetAstronaut_OrderByExperience()
+    {
+        var astronauts = await _context.Astronauts
+            .Include(a => a.Employee)
+            .OrderByDescending(a => a.FlightHours)
+            .Select(a => new {
+                Name = a.Employee!.FullName,
+                a.Rank,
+                a.FlightHours
+            }).ToListAsync();
+
+        if (astronauts == null)
+            return NotFound();
+
+        return Ok(astronauts);
     }
 
     // POST: api/astronauts

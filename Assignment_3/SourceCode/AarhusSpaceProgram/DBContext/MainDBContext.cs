@@ -4,7 +4,7 @@ public class MainDBContext : DbContext {
 	private const string DbName = "AarhusSpaceProgram";
     private const string ConnectionString = $"Data Source=localhost;Initial Catalog={DbName};User ID=sa;Password=Abcd123456!;Connect Timeout=30;Encrypt=True;Trust Server Certificate=True;Authentication=SqlPassword;Application Intent=ReadWrite;";
     protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlServer(ConnectionString);
-
+    public MainDBContext(DbContextOptions<MainDBContext> options) : base(options){ }
     // Models/Schemas
     public DbSet<CelestialBody> CelestialBodies { get; set; }
     public DbSet<Employee> Employees { get; set; }
@@ -178,7 +178,7 @@ public class MainDBContext : DbContext {
 
             // Current status variable constraints.
             entity.Property(L => L.CurrentStatus)
-                .HasColumnType("NVARCHAR(100)")
+                .HasColumnType("int")
                 .IsRequired();
         });
 
@@ -218,11 +218,12 @@ public class MainDBContext : DbContext {
 
             // Foreign Key for Rocket, variable constraints.
             entity.Property(M => M.FK_RocketID)
-                .HasColumnType("INT");
+                .HasColumnType("INT")
+                .IsRequired();
             entity.HasOne(M => M.AssignedRocket)
                 .WithOne(R => R.Mission)
                 .HasForeignKey<Mission>(M => M.FK_RocketID)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Restrict);
     
             // Foreign Key for Launchpad, variable constraints.
             entity.Property(M => M.FK_launchpadID)
@@ -340,5 +341,122 @@ public class MainDBContext : DbContext {
                 .HasForeignKey(AC => AC.ScientistID)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+    
+        base.OnModelCreating(modelBuilder);
+
+        // ----------------------
+        // Employees (REQUIRED BASE)
+        // ----------------------
+        modelBuilder.Entity<Employee>().HasData(
+            new Employee { ID = 1, FullName = "Neil Armstrong" },
+            new Employee { ID = 2, FullName = "Buzz Aldrin" },
+            new Employee { ID = 3, FullName = "Sally Ride" },
+            new Employee { ID = 4, FullName = "Carl Sagan" },
+            new Employee { ID = 5, FullName = "Jane Foster" },
+            new Employee { ID = 6, FullName = "Alice Johnson" },
+            new Employee { ID = 7, FullName = "Bob Smith" }
+        );
+
+        // ----------------------
+        // Astronauts (3+)
+        // ----------------------
+        modelBuilder.Entity<Astronaut>().HasData(
+            new Astronaut { ID = 1, Rank = "Commander", FlightHours = 1200, Paygrade = "A1" },
+            new Astronaut { ID = 2, Rank = "Pilot", FlightHours = 900, Paygrade = "A2" },
+            new Astronaut { ID = 3, Rank = "Specialist", FlightHours = 700, Paygrade = "A3" }
+        );
+
+        // ----------------------
+        // Scientists (2+)
+        // ----------------------
+        modelBuilder.Entity<Scientist>().HasData(
+            new Scientist { ID = 4, Title = "Dr.", Specialty = "Astrophysics" },
+            new Scientist { ID = 5, Title = "Dr.", Specialty = "Planetary Science" }
+        );
+
+        // ----------------------
+        // Managers (2+)
+        // ----------------------
+        modelBuilder.Entity<Manager>().HasData(
+            new Manager { ID = 6},
+            new Manager { ID = 7}
+        );
+
+        // ----------------------
+        // Rockets (2+)
+        // ----------------------
+        modelBuilder.Entity<Rocket>().HasData(
+            new Rocket { ID = 1, ModelName = "Falcon 9", FuelCapacity = 500000, CrewCapacity = 7, NumberOfStages = 2, TotalWeight = 549000 },
+            new Rocket { ID = 2, ModelName = "Saturn V", FuelCapacity = 950000, CrewCapacity = 3, NumberOfStages = 3, TotalWeight = 2970000 }
+        );
+
+        // ----------------------
+        // Launchpads (2+)
+        // ----------------------
+        modelBuilder.Entity<Launchpad>().HasData(
+            new Launchpad { ID = 1, Location = "Cape Canaveral" },
+            new Launchpad { ID = 2, Location = "Vandenberg" }
+        );
+
+        // ----------------------
+        // Celestial Bodies (3+ with hierarchy)
+        // ----------------------
+        modelBuilder.Entity<CelestialBody>().HasData(
+            new CelestialBody { ID = 1, Name = "Earth", Distance = 0, BodyType = "Planet", PlanetType = "Rocky" },
+            new CelestialBody { ID = 2, Name = "Mars", Distance = 225000000, BodyType = "Planet", PlanetType = "Rocky" },
+            new CelestialBody { ID = 3, Name = "Moon", Distance = 384400, BodyType = "Moon",  PlanetType = "Rocky", FK_ParentPlanetID = 1 }
+        );
+
+        // ----------------------
+        // Crews (needed for missions)
+        // ----------------------
+        modelBuilder.Entity<Crew>().HasData(
+            new Crew { ID = 1 },
+            new Crew { ID = 2 }
+        );
+
+        // ----------------------
+        // Missions (2+)
+        // ----------------------
+        modelBuilder.Entity<Mission>().HasData(
+            new Mission
+            {
+                ID = 1,
+                Name = "Apollo 11",
+                Duration = 8,
+                CurrentStatus = (int)Mission.Status.Completed,
+                Type = "Lunar Landing",
+                LaunchDate = new DateOnly(1969, 7, 16),
+
+                FK_RocketID = 2,
+                FK_launchpadID = 1,
+                FK_CrewID = 1,
+                FK_ManagerID = 7,
+                FK_CelestialID = 3
+            },
+            new Mission
+            {
+                ID = 2,
+                Name = "Mars Explorer",
+                Duration = 300,
+                CurrentStatus = (int)Mission.Status.Planned,
+                Type = "Mars Mission",
+                LaunchDate = new DateOnly(2030, 3, 1),
+
+                FK_RocketID = 1,
+                FK_launchpadID = 2,
+                FK_CrewID = 2,
+                FK_ManagerID = 6,
+                FK_CelestialID = 2
+            }
+        );
+
+        // ----------------------
+        // Scientist ↔ Mission (Many-to-Many)
+        // ----------------------
+        modelBuilder.Entity<Joint_Scientist_Mission>().HasData(
+            new Joint_Scientist_Mission { ScientistID = 4, MissionID = 1 },
+            new Joint_Scientist_Mission { ScientistID = 5, MissionID = 2 }
+        );
     }
 }

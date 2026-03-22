@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AarhusSpaceProgram")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+21ff0a04a94a6722c4a328a7f5752b69368b504a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6785dee13723693672c9b5c527bbc4d2de6144bf")]
 [assembly: System.Reflection.AssemblyProductAttribute("AarhusSpaceProgram")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AarhusSpaceProgram")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

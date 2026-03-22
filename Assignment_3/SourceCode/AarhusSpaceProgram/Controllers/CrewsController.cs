@@ -76,7 +76,7 @@ public class CrewsController : ControllerBase
 
     // DELETE: api/Crews/{id}
     // Deletes crew by id
-    [HttpDelete("{id}")]
+    [HttpDelete("id")]
     public async Task<IActionResult> DeleteCrew(int id)
     {
         var crew = await _context.Crews.FindAsync(id);

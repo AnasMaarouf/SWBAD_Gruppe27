@@ -3,6 +3,12 @@ public class Launchpad {
     public int ID { get; set; }
     public string Location { get; set; }
     public int MaxSupportedWeight { get; set; }
-    public string CurrentStatus { get; set; }
+    public int CurrentStatus { get; set; }
     public ICollection<Mission>? Missions {get; set;}
+
+    enum status {
+        //More can be added, though this is more of a draft
+        inactive = 0,
+        acticve
+    }
 }

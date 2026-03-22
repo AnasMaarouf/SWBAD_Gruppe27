@@ -1,19 +1,41 @@
+
+using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
+// context connectionstring
+builder.Services.AddDbContext<MainDBContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
 
+// Controllers
 builder.Services.AddControllers();
 
-
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+// adds OpenAPI
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ----------------------
+// Middleware
+// ----------------------
+
 if (app.Environment.IsDevelopment())
 {
+    // OpenAPI document
     app.MapOpenApi();
+
+    // Scalar UI
+    app.MapScalarApiReference(options =>
+    {
+        options.Title = "Space Program API";
+    });
+
+    app.UseDeveloperExceptionPage();
 }
 
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
 app.Run();

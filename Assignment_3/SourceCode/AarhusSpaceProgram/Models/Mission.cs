@@ -6,10 +6,10 @@ public class Mission {
     public int Duration { get; set; }
     public int CurrentStatus { get; set; }
     public string Type { get; set; }
-    public DateOnly LaunchDate { get; set; }
+    public DateOnly? LaunchDate { get; set; }
     
     // Foreign Key for rocket.
-    public int? FK_RocketID { get; set; }
+    public int FK_RocketID { get; set; }
     public Rocket? AssignedRocket { get; set; }  // Navigation to Rocket
     
     // Foreign Key for launchpad.
@@ -25,8 +25,8 @@ public class Mission {
     public Manager manager { get; set; }  // Navigation to Manager
     
     // Foreign Key for celestialBody.
-    public int? FK_CelestialID { get; set; }
-    public CelestialBody? celestialBody { get; set; }  // Navigation to CelestialBody (destination)
+    public int FK_CelestialID { get; set; }
+    public CelestialBody celestialBody { get; set; }  // Navigation to CelestialBody (destination)
 
     // Navigation property for the joint between mission and scientist (Many-To-Many Relationship).
     public ICollection<Joint_Scientist_Mission>? joint_scientist_missions {get; set;}

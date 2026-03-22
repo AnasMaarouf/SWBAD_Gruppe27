@@ -35,7 +35,7 @@ public class EmployeesController : ControllerBase
         return Ok(employees);
     }
 
-    // GET: api/employees/5
+    // GET: api/employees/{id}
     [HttpGet("{id}")]
     public async Task<IActionResult> GetEmployee(int id)
     {

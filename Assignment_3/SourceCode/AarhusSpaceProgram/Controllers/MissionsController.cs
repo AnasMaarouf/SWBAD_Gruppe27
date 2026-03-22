@@ -18,33 +18,51 @@ public class MissionsController : ControllerBase
         return await _context.Missions.Select(m_dto => new {
             m_dto.ID,
             m_dto.Name,
-            m_dto.Duration,
             m_dto.CurrentStatus,
-            m_dto.Type,
             m_dto.LaunchDate,
-            m_dto.AssignedRocket.ModelName
+            m_dto.AssignedRocket.ModelName,
+
+            manager_name = m_dto.manager.Employee.FullName,
+
+            rocket_model = m_dto.AssignedRocket.ModelName,
+
+            launchpad_Location = m_dto.launchpad.Location,
+
+            target_celestial_body = m_dto.celestialBody.Name
         }).ToListAsync();
     }
 
     // GET: api/missions/{id}
     // Gets mission from id (primary key)
     [HttpGet("{id}")]
-    public async Task<ActionResult<object>> GetMission(int id)
+    public async Task<IActionResult> GetMission(int id)
     {
-        var mission = await _context.Missions.Select(m_dto => new {
-            m_dto.ID,
-            m_dto.Name,
-            m_dto.Duration,
-            m_dto.CurrentStatus,
-            m_dto.Type,
-            m_dto.LaunchDate,
-            m_dto.AssignedRocket.ModelName
-        }).FirstOrDefaultAsync(m => m.ID == id);
+        var mission = await _context.Missions
+            .Where(m => m.ID == id)
+            .Include(m => m.crew)
+                .ThenInclude(c => c.joint_Astronaut_Crew)
+                    .ThenInclude(j => j.astronaut)
+                        .ThenInclude(a => a.Employee)
+            .Include(m => m.joint_scientist_missions)
+                .ThenInclude(js => js.scientist)
+                    .ThenInclude(s => s.Employee)
+            .Select(m => new
+            {
+                m.Name,
 
-        if (mission == null)
-            return NotFound();
+                Astronauts = m.crew.joint_Astronaut_Crew
+                    .Select(j => j.astronaut.Employee.FullName)
+                    .ToList(),
 
-        return mission;
+                Scientists = m.joint_scientist_missions
+                    .Select(js => js.scientist.Employee.FullName)
+                    .ToList()
+            })
+            .FirstOrDefaultAsync();
+
+        if (mission == null) return NotFound();
+
+        return Ok(mission);
     }
 
     // POST: api/missions
@@ -52,7 +70,22 @@ public class MissionsController : ControllerBase
     public async Task<ActionResult<Mission>> CreateMission(Mission mission) {
         // If id is negative return bad request 
         if (mission.ID < 0)
-            return BadRequest("Invalid value: Rocket.ID: Must not be negative!");
+            return BadRequest("Invalid value: Mission.ID: Must not be negative!");
+
+        if (mission.LaunchDate < DateOnly.FromDateTime(DateTime.UtcNow)) {
+            return BadRequest("Launch date cannot be in the past.");
+        }
+
+        if (mission.FK_launchpadID != null) {
+            var LaunchPadIsReserved = await _context.Missions
+                .AnyAsync(m =>
+                    m.FK_launchpadID == mission.FK_launchpadID &&
+                    m.LaunchDate == mission.LaunchDate
+                );
+
+            if (LaunchPadIsReserved)
+                return BadRequest("Launchpad already has a mission scheduled for this date.");
+        }
 
         _context.Missions.Add(mission);
         await _context.SaveChangesAsync();
@@ -66,6 +99,9 @@ public class MissionsController : ControllerBase
     public async Task<IActionResult> UpdateMission(int id, Mission mission) {
         if (id != mission.ID)
             return BadRequest("ERROR!: Invalid value: \"id\" and \"Mission.ID\" are not the same!");
+        
+        if (mission.Duration < 0)
+            return BadRequest("Invalid value: Mission.Duration: Must not be negative!");
 
         // Get old object, for the sake of validation.
         var oldMission = await _context.Missions.FindAsync(id);
@@ -80,6 +116,21 @@ public class MissionsController : ControllerBase
                                                                         mission.CurrentStatus.Equals(Mission.Status.Failed)     ||
                                                                         mission.CurrentStatus.Equals(Mission.Status.Aborted)    ))
             return BadRequest("ERROR!: Only \"Active\" missions can become \"Completed\", \"Failed\", or \"Aborted\"!");
+        
+        if (mission.LaunchDate < DateOnly.FromDateTime(DateTime.UtcNow)) {
+            return BadRequest("Launch date cannot be in the past.");
+        }
+        
+        if (mission.FK_launchpadID != null) {
+            var LaunchPadIsReserved = await _context.Missions
+                .AnyAsync(m =>
+                    m.FK_launchpadID == mission.FK_launchpadID &&
+                    m.LaunchDate == mission.LaunchDate
+                );
+
+            if (LaunchPadIsReserved)
+                return BadRequest("Launchpad already has a mission scheduled for this date.");
+        }
 
         _context.Entry(mission).State = EntityState.Modified;
 

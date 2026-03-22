@@ -21,7 +21,7 @@ public class DepartmentsController : ControllerBase
             .ToListAsync();
     }
 
-    // GET: api/celestialBodies/{id}
+    // GET: api/Departments/{id}
     // Gets department from id (primary key)
     [HttpGet("{id}")]
     public async Task<ActionResult<object>> GetDepartment(int id)
