@@ -1,7 +1,7 @@
 # SWBAD_Gruppe27
 
 ### URLs
-API base URL:
+API base URL: http://localhost:5062
 
 Scalar UI URL: http://localhost:5062/scalar/
 
