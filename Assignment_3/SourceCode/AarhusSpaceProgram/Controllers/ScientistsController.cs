@@ -6,10 +6,12 @@ using Microsoft.EntityFrameworkCore;
 public class ScientistsController : ControllerBase
 {
     private readonly MainDBContext _context;
+    private readonly ILogger<ScientistsController> _logger;
 
-    public ScientistsController(MainDBContext context)
+    public ScientistsController(MainDBContext context, ILogger<ScientistsController> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     // GET: api/Scientists
@@ -59,6 +61,11 @@ public class ScientistsController : ControllerBase
         _context.Scientists.Add(scientist);
         await _context.SaveChangesAsync();
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return CreatedAtAction(nameof(GetScientist), new { id = scientist.ID }, scientist);
     }
 
@@ -84,6 +91,11 @@ public class ScientistsController : ControllerBase
             throw;
         }
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return NoContent();
     }
 
@@ -98,6 +110,11 @@ public class ScientistsController : ControllerBase
 
         _context.Scientists.Remove(scientist);
         await _context.SaveChangesAsync();
+
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
         return NoContent();
     }

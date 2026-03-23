@@ -6,9 +6,11 @@ using Microsoft.EntityFrameworkCore;
 public class LaunchpadsController : ControllerBase
 {
     private readonly MainDBContext _context;
+    private readonly ILogger<LaunchpadsController> _logger;
 
-    public LaunchpadsController(MainDBContext context) {
+    public LaunchpadsController(MainDBContext context, ILogger<LaunchpadsController> logger) {
         _context = context;
+        _logger = logger;
     }
 
     // GET: api/Launchpads
@@ -55,6 +57,11 @@ public class LaunchpadsController : ControllerBase
         _context.Launchpads.Add(launchpad);
         await _context.SaveChangesAsync();
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return CreatedAtAction(nameof(GetLaunchpad), new { id = launchpad.ID }, launchpad);
     }
 
@@ -84,6 +91,11 @@ public class LaunchpadsController : ControllerBase
             throw;
         }
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return NoContent();
     }
 
@@ -98,6 +110,11 @@ public class LaunchpadsController : ControllerBase
 
         _context.Launchpads.Remove(launchpad);
         await _context.SaveChangesAsync();
+
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
         return NoContent();
     }

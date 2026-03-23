@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 
 public class MainDBContext : DbContext {
-	private const string DbName = "AarhusSpaceProgram";
-    private const string ConnectionString = $"Data Source=localhost;Initial Catalog={DbName};User ID=sa;Password=Abcd123456!;Connect Timeout=30;Encrypt=True;Trust Server Certificate=True;Authentication=SqlPassword;Application Intent=ReadWrite;";
-    protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlServer(ConnectionString);
     public MainDBContext(DbContextOptions<MainDBContext> options) : base(options){ }
     // Models/Schemas
+	private const string DbName = "AarhusSpaceProgram";
+    private const string ConnectionString = $"Data Source=localhost;Initial Catalog={DbName};User ID=sa;Password=Knj32410!;Connect Timeout=30;Encrypt=True;Trust Server Certificate=True;Authentication=SqlPassword;Application Intent=ReadWrite;";
+    protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlServer(ConnectionString);
     public DbSet<CelestialBody> CelestialBodies { get; set; }
     public DbSet<Employee> Employees { get; set; }
     public DbSet<Manager> Managers { get; set; }
@@ -58,7 +58,7 @@ public class MainDBContext : DbContext {
 
         // Model builder for Employee
         modelBuilder.Entity<Employee>(entity => {
-            entity.ToTable("Emplyees");
+            entity.ToTable("Employees");
 
             entity.HasKey(e => e.ID);
             entity.Property(e => e.ID)

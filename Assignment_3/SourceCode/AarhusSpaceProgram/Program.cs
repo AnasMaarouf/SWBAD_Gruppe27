@@ -1,8 +1,14 @@
 
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, config) =>
+{
+    config.ReadFrom.Configuration(context.Configuration);
+});
 
 // context connectionstring
 builder.Services.AddDbContext<MainDBContext>(options =>
@@ -10,7 +16,16 @@ builder.Services.AddDbContext<MainDBContext>(options =>
 );
 
 // Controllers
+
 builder.Services.AddControllers();
+    builder.Services.AddOpenApi();/*options =>
+{
+    options.AddSchemaTransformer((schema, context, cancellationToken) =>
+    {
+        schema.Extensions.Clear();
+        return Task.CompletedTask;
+    });
+});*/
 
 // adds OpenAPI
 builder.Services.AddOpenApi();

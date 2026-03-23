@@ -6,9 +6,11 @@ using Microsoft.EntityFrameworkCore;
 public class MissionsController : ControllerBase
 {
     private readonly MainDBContext _context;
+    private readonly ILogger<MissionsController> _logger;
 
-    public MissionsController(MainDBContext context) {
+    public MissionsController(MainDBContext context, ILogger<MissionsController> logger) {
         _context = context;
+        _logger = logger;
     }
 
     // GET: api/missions
@@ -90,6 +92,11 @@ public class MissionsController : ControllerBase
         _context.Missions.Add(mission);
         await _context.SaveChangesAsync();
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return CreatedAtAction(nameof(GetMission), new { id = mission.ID }, mission);
     }
 
@@ -144,6 +151,11 @@ public class MissionsController : ControllerBase
             throw;
         }
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return Ok();
     }
 
@@ -157,6 +169,11 @@ public class MissionsController : ControllerBase
 
         _context.Missions.Remove(mission);
         await _context.SaveChangesAsync();
+
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
         return NoContent();
     }

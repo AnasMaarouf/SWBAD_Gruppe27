@@ -6,10 +6,12 @@ using Microsoft.EntityFrameworkCore;
 public class CrewsController : ControllerBase
 {
     private readonly MainDBContext _context;
+    private readonly ILogger<CrewsController> _logger; 
 
-    public CrewsController(MainDBContext context)
+    public CrewsController(MainDBContext context, ILogger<CrewsController> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     // GET: api/Crews
@@ -46,6 +48,11 @@ public class CrewsController : ControllerBase
         _context.Crews.Add(crew);
         await _context.SaveChangesAsync();
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return CreatedAtAction(nameof(GetCrew), new { id = crew.ID }, crew);
     }
 
@@ -71,6 +78,11 @@ public class CrewsController : ControllerBase
             throw;
         }
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return NoContent();
     }
 
@@ -85,6 +97,11 @@ public class CrewsController : ControllerBase
 
         _context.Crews.Remove(crew);
         await _context.SaveChangesAsync();
+
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
         return NoContent();
     }

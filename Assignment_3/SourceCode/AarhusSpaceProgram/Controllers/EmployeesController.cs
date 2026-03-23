@@ -6,10 +6,12 @@ using Microsoft.EntityFrameworkCore;
 public class EmployeesController : ControllerBase
 {
     private readonly MainDBContext _context;
+    private readonly ILogger<EmployeesController> _logger; 
 
-    public EmployeesController(MainDBContext context)
+    public EmployeesController(MainDBContext context, ILogger<EmployeesController> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     // GET: api/employees
@@ -91,6 +93,11 @@ public class EmployeesController : ControllerBase
         _context.Employees.Add(employee);
         await _context.SaveChangesAsync();
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return CreatedAtAction(nameof(GetEmployee), new { id = employee.ID }, employee);
     }
 
@@ -123,6 +130,11 @@ public class EmployeesController : ControllerBase
 
         await _context.SaveChangesAsync();
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return NoContent();
     }
 
@@ -137,6 +149,11 @@ public class EmployeesController : ControllerBase
 
         _context.Employees.Remove(employee);
         await _context.SaveChangesAsync();
+
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
         return NoContent();
     }

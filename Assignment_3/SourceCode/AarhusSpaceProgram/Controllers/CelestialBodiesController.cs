@@ -6,10 +6,12 @@ using Microsoft.EntityFrameworkCore;
 public class CelestialBodiesController : ControllerBase
 {
     private readonly MainDBContext _context;
+    private readonly ILogger<CelestialBodiesController> _logger;
 
-    public CelestialBodiesController(MainDBContext context)
+    public CelestialBodiesController(MainDBContext context, ILogger<CelestialBodiesController> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     // GET: api/CelestialBodies
@@ -48,6 +50,11 @@ public class CelestialBodiesController : ControllerBase
         _context.CelestialBodies.Add(celestialBody);
         await _context.SaveChangesAsync();
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return CreatedAtAction(nameof(GetCelestialBody), new { id = celestialBody.ID }, celestialBody);
     }
 
@@ -73,6 +80,11 @@ public class CelestialBodiesController : ControllerBase
             throw;
         }
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return NoContent();
     }
 
@@ -87,6 +99,11 @@ public class CelestialBodiesController : ControllerBase
 
         _context.CelestialBodies.Remove(celestialBody);
         await _context.SaveChangesAsync();
+
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
         return NoContent();
     }

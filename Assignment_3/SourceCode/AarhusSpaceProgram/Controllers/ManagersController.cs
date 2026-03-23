@@ -6,9 +6,11 @@ using Microsoft.EntityFrameworkCore;
 public class ManagersController : ControllerBase
 {
     private readonly MainDBContext _context;
+    private readonly ILogger<ManagersController> _logger;
 
-    public ManagersController(MainDBContext context) {
+    public ManagersController(MainDBContext context, ILogger<ManagersController> logger) {
         _context = context;
+        _logger = logger;
     }
 
     // GET: api/Managers
@@ -50,6 +52,11 @@ public class ManagersController : ControllerBase
         _context.Managers.Add(manager);
         await _context.SaveChangesAsync();
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return CreatedAtAction(nameof(GetManager), new { id = manager.ID }, manager);
     }
 
@@ -72,6 +79,11 @@ public class ManagersController : ControllerBase
             throw;
         }
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return NoContent();
     }
 
@@ -86,6 +98,11 @@ public class ManagersController : ControllerBase
 
         _context.Managers.Remove(manager);
         await _context.SaveChangesAsync();
+
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
         return NoContent();
     }

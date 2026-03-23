@@ -6,10 +6,12 @@ using Microsoft.EntityFrameworkCore;
 public class AstronautsController : ControllerBase
 {
     private readonly MainDBContext _context;
+    private readonly ILogger<AstronautsController> _logger; 
 
-    public AstronautsController(MainDBContext context)
+    public AstronautsController(MainDBContext context, ILogger<AstronautsController> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     // GET: api/astronauts
@@ -64,6 +66,11 @@ public class AstronautsController : ControllerBase
         _context.Astronauts.Add(astronaut);
         await _context.SaveChangesAsync();
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return CreatedAtAction(nameof(GetAstronaut), new { id = astronaut.ID }, astronaut);
     }
 
@@ -90,6 +97,11 @@ public class AstronautsController : ControllerBase
             throw;
         }
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfor}", logInfo);
+
         return NoContent();
     }
 
@@ -104,6 +116,11 @@ public class AstronautsController : ControllerBase
 
         _context.Astronauts.Remove(astronaut);
         await _context.SaveChangesAsync();
+
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
         return NoContent();
     }

@@ -6,10 +6,12 @@ using Microsoft.EntityFrameworkCore;
 public class DepartmentsController : ControllerBase
 {
     private readonly MainDBContext _context;
+    private readonly ILogger<DepartmentsController> _logger; 
 
-    public DepartmentsController(MainDBContext context)
+    public DepartmentsController(MainDBContext context, ILogger<DepartmentsController> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     // GET: api/Departments
@@ -47,6 +49,11 @@ public class DepartmentsController : ControllerBase
         _context.Departments.Add(department);
         await _context.SaveChangesAsync();
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return CreatedAtAction(nameof(GetDepartment), new { id = department.ID }, department);
     }
 
@@ -72,6 +79,11 @@ public class DepartmentsController : ControllerBase
             throw;
         }
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+        
         return NoContent();
     }
 
@@ -86,6 +98,11 @@ public class DepartmentsController : ControllerBase
 
         _context.Departments.Remove(department);
         await _context.SaveChangesAsync();
+
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
         return NoContent();
     }

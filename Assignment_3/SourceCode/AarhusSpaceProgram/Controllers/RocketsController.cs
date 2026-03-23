@@ -6,10 +6,12 @@ using Microsoft.EntityFrameworkCore;
 public class RocketsController : ControllerBase
 {
     private readonly MainDBContext _context;
+    private readonly ILogger<RocketsController> _logger;
 
-    public RocketsController(MainDBContext context)
+    public RocketsController(MainDBContext context, ILogger<RocketsController> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     // GET: api/Rockets
@@ -75,6 +77,11 @@ public class RocketsController : ControllerBase
         _context.Rockets.Add(rocket);
         await _context.SaveChangesAsync();
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
         return CreatedAtAction(nameof(GetRocket), new { id = rocket.ID }, rocket);
     }
 
@@ -114,6 +121,11 @@ public class RocketsController : ControllerBase
             throw;
         }
 
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+        
         return NoContent();
     }
 
@@ -128,6 +140,11 @@ public class RocketsController : ControllerBase
 
         _context.Rockets.Remove(rocket);
         await _context.SaveChangesAsync();
+
+        //logging
+        var timestamp = new DateTimeOffset(DateTime.UtcNow);
+        var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
         return NoContent();
     }
