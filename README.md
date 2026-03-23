@@ -3,9 +3,9 @@
 ### URLs
 API base URL:
 
-Scalar UI URL:
+Scalar UI URL: http://localhost:5062/scalar/
 
-OpenAPI JSON URL:
+OpenAPI JSON URL: http://localhost:5062/openapi/v1.json
 
 
 ### Contribution Report:
