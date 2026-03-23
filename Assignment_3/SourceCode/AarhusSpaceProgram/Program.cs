@@ -14,7 +14,7 @@ builder.Host.UseSerilog((context, config) =>
 builder.Services.AddDbContext<MainDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
-
+Log.Information("Test log - app started");
 // Controllers
 
 builder.Services.AddControllers();
