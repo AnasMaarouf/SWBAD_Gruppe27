@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AarhusSpaceProgram.DTOs;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -17,70 +18,92 @@ public class CelestialBodiesController : ControllerBase
     // GET: api/CelestialBodies
     // Gets all CelestialBodies
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CelestialBody>>> GetCelestialBodies()
+    public async Task<ActionResult<IEnumerable<CelestialBodyDto>>> GetCelestialBodies()
     {
         return await _context.CelestialBodies
-            .Include(c => c.ParentPlanet)
+            .Select(c => new CelestialBodyDto {
+                ID = c.ID,
+                Name = c.Name,
+                Distance = (double)c.Distance,
+                BodyType = c.BodyType,
+                PlanetType = c.PlanetType,
+                ParentPlanetName = c.ParentPlanet != null ? c.ParentPlanet.Name : null
+            })
             .ToListAsync();
     }
 
     // GET: api/celestialBodies/{id}
     // Gets celestialBody from id (primary key)
     [HttpGet("{id}")]
-    public async Task<ActionResult<CelestialBody>> GetCelestialBody(int id)
+    public async Task<ActionResult<CelestialBodyDto>> GetCelestialBody(int id)
     {
         var celestialBody = await _context.CelestialBodies
-            .Include(c => c.ParentPlanet)
-            .FirstOrDefaultAsync(c => c.ID == id);
+            .Where(c => c.ID == id)
+            .Select(c => new CelestialBodyDto {
+                ID = c.ID,
+                Name = c.Name,
+                Distance = (double)c.Distance,
+                BodyType = c.BodyType,
+                PlanetType = c.PlanetType,
+                ParentPlanetName = c.ParentPlanet != null ? c.ParentPlanet.Name : null
+            })
+            .FirstOrDefaultAsync();
 
         if (celestialBody == null)
             return NotFound();
 
-        return celestialBody;
+        return Ok(celestialBody);
     }
 
     // POST: api/CelestialBodies
     // Creates an celestialBody
     [HttpPost]
-    public async Task<ActionResult<CelestialBody>> CreateCelestialBody(CelestialBody celestialBody)
+    public async Task<ActionResult<CelestialBodyDto>> CreateCelestialBody(CelestialBodyCreateDto dto)
     {
-        if (celestialBody.ID < 0)
-            return BadRequest("Invalid value: Celestialbody.ID: Must not be negative!");
-        
+        var celestialBody = new CelestialBody {
+            Name = dto.Name,
+            Distance = (decimal)dto.Distance,
+            BodyType = dto.BodyType,
+            PlanetType = dto.PlanetType,
+            FK_ParentPlanetID = dto.FK_ParentPlanetID
+        };
+
         _context.CelestialBodies.Add(celestialBody);
         await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
-        return CreatedAtAction(nameof(GetCelestialBody), new { id = celestialBody.ID }, celestialBody);
+        return CreatedAtAction(nameof(GetCelestialBody), new { id = celestialBody.ID }, new CelestialBodyDto {
+            ID = celestialBody.ID,
+            Name = celestialBody.Name,
+            Distance = (double)celestialBody.Distance,
+            BodyType = celestialBody.BodyType,
+            PlanetType = celestialBody.PlanetType
+        });
     }
 
     // PUT: api/CelestialBodies/{id}
     // Updates celestialBody on id
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateCelestialBody(int id, CelestialBody celestialBody) {
-        if (id != celestialBody.ID)
+    public async Task<IActionResult> UpdateCelestialBody(int id, CelestialBodyUpdateDto dto)
+    {
+        if (id != dto.ID)
             return BadRequest();
 
-        if (celestialBody.ID < 0)
-            return BadRequest("Invalid value: Celestialbody.ID: Must not be negative!");
+        var celestialBody = await _context.CelestialBodies.FindAsync(id);
+        if (celestialBody == null)
+            return NotFound();
 
-        _context.Entry(celestialBody).State = EntityState.Modified;
+        celestialBody.Name = dto.Name;
+        celestialBody.Distance = (decimal)dto.Distance;
+        celestialBody.BodyType = dto.BodyType;
+        celestialBody.PlanetType = dto.PlanetType;
+        celestialBody.FK_ParentPlanetID = dto.FK_ParentPlanetID;
 
-        try {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!_context.CelestialBodies.Any(c => c.ID == id))
-                return NotFound();
-            throw;
-        }
+        await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);
@@ -100,7 +123,6 @@ public class CelestialBodiesController : ControllerBase
         _context.CelestialBodies.Remove(celestialBody);
         await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);

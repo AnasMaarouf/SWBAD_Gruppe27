@@ -18,14 +18,16 @@ builder.Services.AddDbContext<MainDBContext>(options =>
 // Controllers
 
 builder.Services.AddControllers();
-    builder.Services.AddOpenApi();/*options =>
+
+builder.Services.AddOpenApi(options =>
 {
     options.AddSchemaTransformer((schema, context, cancellationToken) =>
     {
-        schema.Extensions.Clear();
+        if (schema?.Extensions != null)
+            schema.Extensions.Clear();
         return Task.CompletedTask;
     });
-});*/
+});
 
 // adds OpenAPI
 builder.Services.AddOpenApi();

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AarhusSpaceProgram.DTOs;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -16,70 +17,69 @@ public class ManagersController : ControllerBase
     // GET: api/Managers
     // Gets all Managers
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<object>>> GetManagers(){
+    public async Task<ActionResult<IEnumerable<ManagerDto>>> GetManagers()
+    {
         return await _context.Managers
-            .Include(m => m.Employee)
+            .Select(m => new ManagerDto {
+                ID = m.ID,
+                FullName = m.Employee != null ? m.Employee.FullName : null
+            })
             .ToListAsync();
     }
-
     // GET: api/Managers/{id}
     // Gets manager from id (primary key)
     [HttpGet("{id}")]
-    public async Task<ActionResult<Manager>> GetManager(int id)
+    public async Task<ActionResult<ManagerDto>> GetManager(int id)
     {
         var manager = await _context.Managers
-            .Include(m => m.Employee)
-            .FirstOrDefaultAsync(m => m.ID == id);
+            .Where(m => m.ID == id)
+            .Select(m => new ManagerDto {
+                ID = m.ID,
+                FullName = m.Employee != null ? m.Employee.FullName : null
+            })
+            .FirstOrDefaultAsync();
 
         if (manager == null)
             return NotFound();
 
-        return manager;
+        return Ok(manager);
     }
 
     // POST: api/Managers
     // Creates an manager
     [HttpPost]
-    public async Task<ActionResult<Manager>> CreateManager(Manager manager) {
-        // If id is negative return bad request 
-        if (manager.ID < 0)
-            return BadRequest("Invalid value: Manager.ID: Must not be negative!");
-
-        // if manager and emplyee id is not consistent, return bad request.
-        if(!manager.ID.Equals(manager.Employee.ID))
-            return BadRequest("ERROR!: Scientist.ID: Not consistent with Employee.ID");
+    public async Task<ActionResult<ManagerDto>> CreateManager(ManagerCreateDto dto)
+    {
+        var manager = new Manager {
+            ID = dto.EmployeeID
+        };
 
         _context.Managers.Add(manager);
         await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
-        return CreatedAtAction(nameof(GetManager), new { id = manager.ID }, manager);
+        return CreatedAtAction(nameof(GetManager), new { id = manager.ID }, new ManagerDto {
+            ID = manager.ID
+        });
     }
 
     // PUT: api/Managers/{id}
     // Updates manager on id
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateManager(int id, Manager manager) {
-        if (id != manager.ID)
+    public async Task<IActionResult> UpdateManager(int id, ManagerUpdateDto dto)
+    {
+        if (id != dto.ID)
             return BadRequest("ERROR!: id and Manager.ID, not consistent!");
 
-        _context.Entry(manager).State = EntityState.Modified;
+        var manager = await _context.Managers.FindAsync(id);
+        if (manager == null)
+            return NotFound();
 
-        try {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!_context.Managers.Any(m => m.ID == id))
-                return NotFound();
-            throw;
-        }
+        await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);
@@ -99,7 +99,6 @@ public class ManagersController : ControllerBase
         _context.Managers.Remove(manager);
         await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);

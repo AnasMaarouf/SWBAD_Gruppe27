@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AarhusSpaceProgram.DTOs;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -17,19 +18,36 @@ public class AstronautsController : ControllerBase
     // GET: api/astronauts
     // Gets all astronauts
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Astronaut>>> GetAstronauts()
+    public async Task<ActionResult<IEnumerable<AstronautDto>>> GetAstronauts()
     {
         return await _context.Astronauts
+            .Include(a => a.Employee)
+            .Select(a => new AstronautDto {
+                ID = a.ID,
+                Rank = a.Rank,
+                FlightHours = a.FlightHours,
+                Paygrade = a.Paygrade,
+                FullName = a.Employee != null ? a.Employee.FullName : null
+            })
             .ToListAsync();
     }
 
     // GET: api/astronauts/{id}
     // Gets astronaut from id (primary key)
     [HttpGet("{id}")]
-    public async Task<ActionResult<Astronaut>> GetAstronaut(int id)
+    public async Task<ActionResult<AstronautDto>> GetAstronaut(int id)
     {
         var astronaut = await _context.Astronauts
-            .FirstOrDefaultAsync(m => m.ID == id);
+            .Include(a => a.Employee)
+            .Where(a => a.ID == id)
+            .Select(a => new AstronautDto {
+                ID = a.ID,
+                Rank = a.Rank,
+                FlightHours = a.FlightHours,
+                Paygrade = a.Paygrade,
+                FullName = a.Employee != null ? a.Employee.FullName : null
+            })
+            .FirstOrDefaultAsync();
 
         if (astronaut == null)
             return NotFound();
@@ -38,16 +56,19 @@ public class AstronautsController : ControllerBase
     }
 
     [HttpGet("OrderByExperience")]
-    public async Task<ActionResult<Astronaut>> GetAstronaut_OrderByExperience()
+    public async Task<ActionResult<IEnumerable<AstronautDto>>> GetAstronaut_OrderByExperience()
     {
         var astronauts = await _context.Astronauts
             .Include(a => a.Employee)
             .OrderByDescending(a => a.FlightHours)
-            .Select(a => new {
-                Name = a.Employee!.FullName,
-                a.Rank,
-                a.FlightHours
-            }).ToListAsync();
+            .Select(a => new AstronautDto {
+                ID = a.ID,
+                Rank = a.Rank,
+                FlightHours = a.FlightHours,
+                Paygrade = a.Paygrade,
+                FullName = a.Employee != null ? a.Employee.FullName : null
+            })
+            .ToListAsync();
 
         if (astronauts == null)
             return NotFound();
@@ -58,49 +79,51 @@ public class AstronautsController : ControllerBase
     // POST: api/astronauts
     // Creates an astronaut
     [HttpPost]
-    public async Task<ActionResult<Astronaut>> CreateAstronaut(Astronaut astronaut)
+    public async Task<ActionResult<AstronautDto>> CreateAstronaut(AstronautCreateDto dto)
     {
-        if (astronaut.ID < 0)
-            return BadRequest("Invalid value: Astronaut.ID: Must not be negative!");
-        
+        var astronaut = new Astronaut {
+            ID = dto.FK_EmployeeID,
+            Rank = dto.Rank,
+            FlightHours = dto.FlightHours,
+            Paygrade = dto.Paygrade
+        };
+
         _context.Astronauts.Add(astronaut);
         await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
-        return CreatedAtAction(nameof(GetAstronaut), new { id = astronaut.ID }, astronaut);
+        return CreatedAtAction(nameof(GetAstronaut), new { id = astronaut.ID }, new AstronautDto {
+            ID = astronaut.ID,
+            Rank = astronaut.Rank,
+            FlightHours = astronaut.FlightHours,
+            Paygrade = astronaut.Paygrade
+        });
     }
 
     // PUT: api/astronauts/{id}
     // Updates astronaut on id
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateAstronaut(int id, Astronaut astronaut) {
-        if (id != astronaut.ID)
+    public async Task<IActionResult> UpdateAstronaut(int id, AstronautUpdateDto dto)
+    {
+        if (id != dto.ID)
             return BadRequest();
 
-        if (astronaut.ID < 0)
-            return BadRequest("Invalid value: Astronaut.ID: Must not be negative!");
+        var astronaut = await _context.Astronauts.FindAsync(id);
+        if (astronaut == null)
+            return NotFound();
 
-        _context.Entry(astronaut).State = EntityState.Modified;
+        astronaut.Rank = dto.Rank;
+        astronaut.FlightHours = dto.FlightHours;
+        astronaut.Paygrade = dto.Paygrade;
 
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (_context.Astronauts.Any(a => a.ID == id))
-                return NotFound();
-            throw;
-        }
+        await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
-        _logger.LogInformation("Request called {@LogInfor}", logInfo);
+        _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
         return NoContent();
     }
@@ -117,7 +140,6 @@ public class AstronautsController : ControllerBase
         _context.Astronauts.Remove(astronaut);
         await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);

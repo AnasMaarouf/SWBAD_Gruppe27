@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AarhusSpaceProgram.DTOs;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -16,57 +17,38 @@ public class EmployeesController : ControllerBase
 
     // GET: api/employees
     [HttpGet]
-    public async Task<IActionResult> GetEmployees()
+    public async Task<ActionResult<IEnumerable<EmployeeDto>>> GetEmployees()
     {
-        var employees = await _context.Employees
-            .Select(e => new
-            {
-                e.ID,
-                e.FullName,
-                e.HireDate,
-
+        return await _context.Employees
+            .Select(e => new EmployeeDto {
+                ID = e.ID,
+                FullName = e.FullName,
+                HireDate = e.HireDate,
                 Department = e.Department != null ? e.Department.name : null,
-
-                // Roles (only one or none typically)
                 IsAstronaut = e.Astronaut != null,
                 IsScientist = e.Scientist != null,
                 IsManager = e.Manager != null
             })
             .ToListAsync();
-
-        return Ok(employees);
     }
 
     // GET: api/employees/{id}
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetEmployee(int id)
+    public async Task<ActionResult<EmployeeDto>> GetEmployee(int id)
     {
-        
         var employee = await _context.Employees
             .Where(e => e.ID == id)
-            .Select(e => new
-            {
-                e.ID,
-                e.FullName,
-                e.HireDate,
-
+            .Select(e => new EmployeeDto {
+                ID = e.ID,
+                FullName = e.FullName,
+                HireDate = e.HireDate,
                 Department = e.Department != null ? e.Department.name : null,
-
-                // Role details (expanded a bit more)
-                Astronaut = e.Astronaut == null ? null : new
-                {
-                    e.Astronaut.ID
-                },
-
-                Scientist = e.Scientist == null ? null : new
-                {
-                    e.Scientist.ID
-                },
-
-                Manager = e.Manager == null ? null : new
-                {
-                    e.Manager.ID
-                }
+                IsAstronaut = e.Astronaut != null,
+                IsScientist = e.Scientist != null,
+                IsManager = e.Manager != null,
+                Astronaut = e.Astronaut == null ? null : new AstronautRoleDto { ID = e.Astronaut.ID },
+                Scientist = e.Scientist == null ? null : new ScientistRoleDto { ID = e.Scientist.ID },
+                Manager = e.Manager == null ? null : new ManagerRoleDto { ID = e.Manager.ID }
             })
             .FirstOrDefaultAsync();
 
@@ -78,59 +60,57 @@ public class EmployeesController : ControllerBase
 
     // POST: api/employees
     [HttpPost]
-    public async Task<IActionResult> CreateEmployee(Employee employee)
+    public async Task<ActionResult<EmployeeDto>> CreateEmployee(EmployeeCreateDto dto)
     {
-        if (employee.ID < 0)
-            return BadRequest("Invalid value: Employee.ID: Must not be negative!");
-
-        // Basic validation
-        if (string.IsNullOrWhiteSpace(employee.FullName))
+        if (string.IsNullOrWhiteSpace(dto.FullName))
             return BadRequest("Full name is required.");
 
-        if (employee.HireDate > DateOnly.FromDateTime(DateTime.Now))
+        if (dto.HireDate > DateOnly.FromDateTime(DateTime.Now))
             return BadRequest("Hire date cannot be in the future.");
+
+        var employee = new Employee {
+            FullName = dto.FullName,
+            HireDate = dto.HireDate,
+            FK_DepartmentID = dto.FK_DepartmentID
+        };
 
         _context.Employees.Add(employee);
         await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
-        return CreatedAtAction(nameof(GetEmployee), new { id = employee.ID }, employee);
+        return CreatedAtAction(nameof(GetEmployee), new { id = employee.ID }, new EmployeeDto {
+            ID = employee.ID,
+            FullName = employee.FullName,
+            HireDate = employee.HireDate
+        });
     }
 
     // PUT: api/employees/{id}
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateEmployee(int id, Employee updatedEmployee)
+    public async Task<IActionResult> UpdateEmployee(int id, EmployeeUpdateDto dto)
     {
-        if (id != updatedEmployee.ID)
+        if (id != dto.ID)
             return BadRequest();
 
-        if (updatedEmployee.ID < 0)
-            return BadRequest("Invalid value: Employee.ID: Must not be negative!");
-
         var existingEmployee = await _context.Employees.FindAsync(id);
-
         if (existingEmployee == null)
             return NotFound();
 
-        // Validation
-        if (string.IsNullOrWhiteSpace(updatedEmployee.FullName))
+        if (string.IsNullOrWhiteSpace(dto.FullName))
             return BadRequest("Full name is required.");
 
-        if (updatedEmployee.HireDate > DateOnly.FromDateTime(DateTime.Now))
+        if (dto.HireDate > DateOnly.FromDateTime(DateTime.Now))
             return BadRequest("Hire date cannot be in the future.");
 
-        // Update fields
-        existingEmployee.FullName = updatedEmployee.FullName;
-        existingEmployee.HireDate = updatedEmployee.HireDate;
-        existingEmployee.FK_DepartmentID = updatedEmployee.FK_DepartmentID;
+        existingEmployee.FullName = dto.FullName;
+        existingEmployee.HireDate = dto.HireDate;
+        existingEmployee.FK_DepartmentID = dto.FK_DepartmentID;
 
         await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);
@@ -143,14 +123,12 @@ public class EmployeesController : ControllerBase
     public async Task<IActionResult> DeleteEmployee(int id)
     {
         var employee = await _context.Employees.FindAsync(id);
-
         if (employee == null)
             return NotFound();
 
         _context.Employees.Remove(employee);
         await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);

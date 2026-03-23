@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AarhusSpaceProgram.DTOs;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -15,14 +16,13 @@ public class ScientistsController : ControllerBase
     }
 
     // GET: api/Scientists
-    // Gets all Scientists
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<object>>> GetScientists() {
+    public async Task<ActionResult<IEnumerable<ScientistDto>>> GetScientists()
+    {
         var result = await _context.Scientists
-            .Select(s => new
-            {
-                s.ID,
-                s.Employee.FullName,
+            .Select(s => new ScientistDto {
+                ID = s.ID,
+                FullName = s.Employee.FullName,
                 Missions = s.joint_scientist_missions
                     .Select(j => j.mission.Name)
                     .ToList()
@@ -31,67 +31,66 @@ public class ScientistsController : ControllerBase
         return Ok(result);
     }
 
-    // GET: api/celestialBodies/{id}
-    // Gets scientist from id (primary key)
+    // GET: api/Scientists/{id}
     [HttpGet("{id}")]
-    public async Task<ActionResult<object>> GetScientist(int id) {
+    public async Task<ActionResult<ScientistDto>> GetScientist(int id)
+    {
         var scientist = await _context.Scientists
-            .Select(s => new {
-                s.ID,
-                s.Employee.FullName,
+            .Where(s => s.ID == id)
+            .Select(s => new ScientistDto {
+                ID = s.ID,
+                FullName = s.Employee.FullName,
                 Missions = s.joint_scientist_missions
                     .Select(j => j.mission.Name)
                     .ToList()
             })
-            .FirstOrDefaultAsync(r => r.ID == id);
+            .FirstOrDefaultAsync();
 
         if (scientist == null)
             return NotFound();
 
-        return scientist;
+        return Ok(scientist);
     }
 
     // POST: api/Scientists
-    // Creates an scientist
     [HttpPost]
-    public async Task<ActionResult<Scientist>> CreateScientist(Scientist scientist) {
-        if(!scientist.ID.Equals(scientist.Employee.ID))
+    public async Task<ActionResult<ScientistDto>> CreateScientist(ScientistCreateDto dto)
+    {
+        if (dto.ID != dto.FK_EmployeeID)
             return BadRequest("ERROR!: Scientist.ID: Not consistent with Employee.ID");
+
+        var scientist = new Scientist {
+            ID = dto.FK_EmployeeID
+        };
 
         _context.Scientists.Add(scientist);
         await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
-        return CreatedAtAction(nameof(GetScientist), new { id = scientist.ID }, scientist);
+        return CreatedAtAction(nameof(GetScientist), new { id = scientist.ID }, new ScientistDto {
+            ID = scientist.ID
+        });
     }
 
     // PUT: api/Scientists/{id}
-    // Updates scientist on id
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateScientist(int id, Scientist scientist) {
-        if(id != scientist.ID)
+    public async Task<IActionResult> UpdateScientist(int id, ScientistUpdateDto dto)
+    {
+        if (id != dto.ID)
             return BadRequest("ERROR!: id and Scientist.ID, not consistent!");
 
-        if(!scientist.ID.Equals(scientist.Employee.ID))
+        if (dto.ID != dto.FK_EmployeeID)
             return BadRequest("ERROR!: Scientist.ID: Not consistent with Employee.ID!");
 
-        _context.Entry(scientist).State = EntityState.Modified;
+        var scientist = await _context.Scientists.FindAsync(id);
+        if (scientist == null)
+            return NotFound();
 
-        try {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (_context.Scientists.Any(r => r.ID == id))
-                return NotFound();
-            throw;
-        }
+        await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);
@@ -100,7 +99,6 @@ public class ScientistsController : ControllerBase
     }
 
     // DELETE: api/Scientists/{id}
-    // Deletes scientist by id
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteScientist(int id)
     {
@@ -111,7 +109,6 @@ public class ScientistsController : ControllerBase
         _context.Scientists.Remove(scientist);
         await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);

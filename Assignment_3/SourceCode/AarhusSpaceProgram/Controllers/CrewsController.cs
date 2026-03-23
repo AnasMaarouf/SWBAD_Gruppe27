@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AarhusSpaceProgram.DTOs;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -17,66 +18,63 @@ public class CrewsController : ControllerBase
     // GET: api/Crews
     // Gets all Crews
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Crew>>> GetCrews()
+    public async Task<ActionResult<IEnumerable<CrewDto>>> GetCrews()
     {
         return await _context.Crews
+            .Select(c => new CrewDto {
+                ID = c.ID
+            })
             .ToListAsync();
     }
 
     // GET: api/celestialBodies/{id}
     // Gets crew from id (primary key)
     [HttpGet("{id}")]
-    public async Task<ActionResult<Crew>> GetCrew(int id)
+    public async Task<ActionResult<CrewDto>> GetCrew(int id)
     {
         var crew = await _context.Crews
-            .FirstOrDefaultAsync(c => c.ID == id);
+            .Where(c => c.ID == id)
+            .Select(c => new CrewDto {
+                ID = c.ID
+            })
+            .FirstOrDefaultAsync();
 
         if (crew == null)
             return NotFound();
 
-        return crew;
+        return Ok(crew);
     }
 
     // POST: api/Crews
     // Creates an crew
     [HttpPost]
-    public async Task<ActionResult<Crew>> CreateCrew(Crew crew)
+    public async Task<ActionResult<CrewDto>> CreateCrew(CrewCreateDto dto)
     {
-        if (crew.ID < 0)
-            return BadRequest("Invalid value: <Crew>.ID: Must not be negative!");
+        var crew = new Crew();
 
         _context.Crews.Add(crew);
         await _context.SaveChangesAsync();
 
-        //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
         var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
         _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
-        return CreatedAtAction(nameof(GetCrew), new { id = crew.ID }, crew);
+        return CreatedAtAction(nameof(GetCrew), new { id = crew.ID }, new CrewDto { ID = crew.ID });
     }
 
     // PUT: api/Crews/{id}
     // Updates crew on id
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateCrew(int id, Crew crew) {
-        if (id != crew.ID)
+    public async Task<IActionResult> UpdateCrew(int id, CrewUpdateDto dto)
+    {
+        if (id != dto.ID)
             return BadRequest();
 
-        if (crew.ID < 0)
-            return BadRequest("Invalid value: Crew.ID: Must not be negative!");
+        var crew = await _context.Crews.FindAsync(id);
+        if (crew == null)
+            return NotFound();
 
-        _context.Entry(crew).State = EntityState.Modified;
-
-        try {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!_context.Crews.Any(c => c.ID == id))
-                return NotFound();
-            throw;
-        }
+        await _context.SaveChangesAsync();
 
         //logging
         var timestamp = new DateTimeOffset(DateTime.UtcNow);
@@ -88,7 +86,7 @@ public class CrewsController : ControllerBase
 
     // DELETE: api/Crews/{id}
     // Deletes crew by id
-    [HttpDelete("id")]
+    [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCrew(int id)
     {
         var crew = await _context.Crews.FindAsync(id);
