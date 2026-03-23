@@ -12,5 +12,5 @@ OpenAPI JSON URL: http://localhost:5062/openapi/v1.json
 
 Anas: A, B, C, D
 
-Karoline: E, F
+Karoline: E, F, DTOs
   
