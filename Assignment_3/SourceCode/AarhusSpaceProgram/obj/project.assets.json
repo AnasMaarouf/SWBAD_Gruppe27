@@ -3650,11 +3650,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Perso\\Desktop\\SWBADmodified\\SWBAD_Gruppe27\\Assignment_3\\SourceCode\\AarhusSpaceProgram\\AarhusSpaceProgram.csproj",
+      "projectUniqueName": "C:\\Users\\Perso\\Desktop\\SWBAD\\SWBAD_Gruppe27\\Assignment_3\\SourceCode\\AarhusSpaceProgram\\AarhusSpaceProgram.csproj",
       "projectName": "AarhusSpaceProgram",
-      "projectPath": "C:\\Users\\Perso\\Desktop\\SWBADmodified\\SWBAD_Gruppe27\\Assignment_3\\SourceCode\\AarhusSpaceProgram\\AarhusSpaceProgram.csproj",
+      "projectPath": "C:\\Users\\Perso\\Desktop\\SWBAD\\SWBAD_Gruppe27\\Assignment_3\\SourceCode\\AarhusSpaceProgram\\AarhusSpaceProgram.csproj",
       "packagesPath": "C:\\Users\\Perso\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Perso\\Desktop\\SWBADmodified\\SWBAD_Gruppe27\\Assignment_3\\SourceCode\\AarhusSpaceProgram\\obj\\",
+      "outputPath": "C:\\Users\\Perso\\Desktop\\SWBAD\\SWBAD_Gruppe27\\Assignment_3\\SourceCode\\AarhusSpaceProgram\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Perso\\AppData\\Roaming\\NuGet\\NuGet.Config"
