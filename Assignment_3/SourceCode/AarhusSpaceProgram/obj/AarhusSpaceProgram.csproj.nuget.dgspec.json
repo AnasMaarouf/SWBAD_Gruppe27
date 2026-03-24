@@ -71,21 +71,9 @@
               "target": "Package",
               "version": "[10.0.4, )"
             },
-            "MongoDB.Driver": {
-              "target": "Package",
-              "version": "[3.7.1, )"
-            },
             "Scalar.AspNetCore": {
               "target": "Package",
               "version": "[2.13.13, )"
-            },
-            "Serilog.AspNetCore": {
-              "target": "Package",
-              "version": "[10.0.0, )"
-            },
-            "Serilog.Sinks.MongoDB": {
-              "target": "Package",
-              "version": "[7.2.0, )"
             }
           },
           "imports": [

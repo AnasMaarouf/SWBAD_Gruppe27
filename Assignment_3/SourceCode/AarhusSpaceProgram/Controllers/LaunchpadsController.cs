@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AarhusSpaceProgram.DTOs;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -17,32 +16,33 @@ public class LaunchpadsController : ControllerBase
     // GET: api/Launchpads
     // Gets all Launchpads
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<LaunchpadDto>>> GetLaunchpads()
-    {
-        return await _context.Launchpads
-            .Select(l => new LaunchpadDto {
-                ID = l.ID,
-                Location = l.Location,
-                CurrentStatus = l.CurrentStatus,
-                MaxSupportedWeight = l.MaxSupportedWeight
-            })
-            .ToListAsync();
+    public async Task<ActionResult<IEnumerable<LaunchpadResponseDTO>>> GetLaunchpads() {
+        var launchpads = await _context.Launchpads.Select(dto => new LaunchpadResponseDTO {
+            Id = dto.ID,
+            Location = dto.Location,
+            CurrentStatus = dto.CurrentStatus
+        }).ToListAsync();
+
+        if(launchpads == null)
+            return NotFound("No launchpads exists");
+        
+        return Ok(launchpads);
     }
 
     // GET: api/Launchpads/{id}
     // Gets launchpad from id (primary key)
     [HttpGet("{id}")]
-    public async Task<ActionResult<LaunchpadDto>> GetLaunchpad(int id)
-    {
+    public async Task<ActionResult<DetailedLaunchpadResponseDTO>> GetLaunchpad(int id) {
+        
         var launchpad = await _context.Launchpads
-            .Where(l => l.ID == id)
-            .Select(l => new LaunchpadDto {
-                ID = l.ID,
-                Location = l.Location,
-                CurrentStatus = l.CurrentStatus,
-                MaxSupportedWeight = l.MaxSupportedWeight
-            })
-            .FirstOrDefaultAsync();
+        .Include(l => l.Missions)
+        .Select( dto => new DetailedLaunchpadResponseDTO {
+            Id = dto.ID,
+            Location = dto.Location,
+            CurrentStatus = dto.CurrentStatus,
+            MaxSupportedWeight = dto.MaxSupportedWeight,
+            Missions = dto.Missions.Select(m => m.Name).ToList()
+        }).FirstOrDefaultAsync(dto => dto.Id == id);
 
         if (launchpad == null)
             return NotFound();
@@ -53,57 +53,64 @@ public class LaunchpadsController : ControllerBase
     // POST: api/Launchpads
     // Creates an launchpad
     [HttpPost]
-    public async Task<ActionResult<LaunchpadDto>> CreateLaunchpad(LaunchpadCreateDto dto)
-    {
-        if (dto.MaxSupportedWeight < 0)
+    public async Task<ActionResult<Launchpad>> CreateLaunchpad(CreateLaunchpadDTO dto) {
+        if(dto.MaxSupportedWeight < 0) {
+            // Logging
+            var timestamp = new DateTimeOffset(DateTime.UtcNow);
+            var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 400, Timestamp = timestamp };
+            _logger.LogInformation("Request called {@LogInfo}", logInfo);
             return BadRequest("ERROR!: Launchpad.MaxSupportedWeight: Value cannot be negative!");
+        }
 
-        var launchpad = new Launchpad {
+        var launchpad = new Launchpad
+        {
+            CurrentStatus = dto.CurrentStatus,
             Location = dto.Location,
-            CurrentStatus = dto.CurrentStatus.ToString(),
             MaxSupportedWeight = dto.MaxSupportedWeight
         };
 
         _context.Launchpads.Add(launchpad);
         await _context.SaveChangesAsync();
 
-        var timestamp = new DateTimeOffset(DateTime.UtcNow);
-        var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
-        _logger.LogInformation("Request called {@LogInfo}", logInfo);
-
-        return CreatedAtAction(nameof(GetLaunchpad), new { id = launchpad.ID }, new LaunchpadDto {
-            ID = launchpad.ID,
-            Location = launchpad.Location,
-            MaxSupportedWeight = launchpad.MaxSupportedWeight
-        });
+        {   // Logging
+            var timestamp = new DateTimeOffset(DateTime.UtcNow);
+            var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
+            _logger.LogInformation("Request called {@LogInfo}", logInfo);
+        }
+        return CreatedAtAction(nameof(GetLaunchpad), new { id = launchpad.ID }, launchpad);
     }
 
     // PUT: api/Launchpads/{id}
     // Updates launchpad on id
     [HttpPut("{id}")]
-     public async Task<IActionResult> UpdateLaunchpad(int id, LaunchpadUpdateDto dto)
-    {
-        if (id != dto.ID)
-            return BadRequest();
-
-        if (dto.MaxSupportedWeight < 0)
+    public async Task<IActionResult> UpdateLaunchpad(int id, CreateLaunchpadDTO dto) {
+        if(dto.MaxSupportedWeight < 0)
             return BadRequest("ERROR!: Launchpad.MaxSupportedWeight: Value cannot be negative!");
 
-        var launchpad = await _context.Launchpads.FindAsync(id);
-        if (launchpad == null)
-            return NotFound();
+        var launchpad = await _context.Launchpads
+        .FirstOrDefaultAsync(dto => dto.ID == id);
 
+        if(launchpad == null) {
+            // Logging
+            var timestamp = new DateTimeOffset(DateTime.UtcNow);
+            var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 404, Timestamp = timestamp };
+            _logger.LogInformation("Request called {@LogInfo}", logInfo);
+            return NotFound("Launchpad does not exist");
+        }
+
+        launchpad.CurrentStatus = dto.CurrentStatus;
         launchpad.Location = dto.Location;
-        launchpad.CurrentStatus = dto.CurrentStatus.ToString();
         launchpad.MaxSupportedWeight = dto.MaxSupportedWeight;
 
         await _context.SaveChangesAsync();
 
-        var timestamp = new DateTimeOffset(DateTime.UtcNow);
-        var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
-        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+        {   // Logging
+            var timestamp = new DateTimeOffset(DateTime.UtcNow);
+            var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 200, Timestamp = timestamp };
+            _logger.LogInformation("Request called {@LogInfo}", logInfo);
+        }
 
-        return NoContent();
+        return Ok("Launchpad updated");
     }
 
     // DELETE: api/Launchpads/{id}
@@ -112,15 +119,22 @@ public class LaunchpadsController : ControllerBase
     public async Task<IActionResult> DeleteLaunchpad(int id)
     {
         var launchpad = await _context.Launchpads.FindAsync(id);
-        if (launchpad == null)
+        if (launchpad == null) {
+            // Logging
+            var timestamp = new DateTimeOffset(DateTime.UtcNow);
+            var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 404, Timestamp = timestamp };
+            _logger.LogInformation("Request called {@LogInfo}", logInfo);
             return NotFound();
+        }
 
         _context.Launchpads.Remove(launchpad);
         await _context.SaveChangesAsync();
 
-        var timestamp = new DateTimeOffset(DateTime.UtcNow);
-        var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
-        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+        {   // Logging
+            var timestamp = new DateTimeOffset(DateTime.UtcNow);
+            var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+            _logger.LogInformation("Request called {@LogInfo}", logInfo);
+        }
 
         return NoContent();
     }

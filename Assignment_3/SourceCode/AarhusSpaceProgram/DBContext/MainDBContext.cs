@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 
 public class MainDBContext : DbContext {
+	private const string DbName = "AarhusSpaceProgram";
+    private const string ConnectionString = $"Data Source=localhost;Initial Catalog={DbName};User ID=sa;Password=Abcd123456!;Connect Timeout=30;Encrypt=True;Trust Server Certificate=True;Authentication=SqlPassword;Application Intent=ReadWrite;";
+    protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlServer(ConnectionString);
     public MainDBContext(DbContextOptions<MainDBContext> options) : base(options){ }
     // Models/Schemas
-	private const string DbName = "AarhusSpaceProgram";
-    private const string ConnectionString = $"Data Source=localhost;Initial Catalog={DbName};User ID=sa;Password=Knj32410!;Connect Timeout=30;Encrypt=True;Trust Server Certificate=True;Authentication=SqlPassword;Application Intent=ReadWrite;";
-    protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlServer(ConnectionString);
     public DbSet<CelestialBody> CelestialBodies { get; set; }
     public DbSet<Employee> Employees { get; set; }
     public DbSet<Manager> Managers { get; set; }
@@ -58,7 +58,7 @@ public class MainDBContext : DbContext {
 
         // Model builder for Employee
         modelBuilder.Entity<Employee>(entity => {
-            entity.ToTable("Employees");
+            entity.ToTable("Emplyees");
 
             entity.HasKey(e => e.ID);
             entity.Property(e => e.ID)
@@ -84,7 +84,7 @@ public class MainDBContext : DbContext {
                 .IsRequired();
 
             entity.HasOne(m => m.Employee)
-                .WithOne(e => e.Manager)
+                .WithOne(e => e.manager)
                 .HasForeignKey<Manager>(m => m.ID)
                 .OnDelete(DeleteBehavior.Cascade);
         });
@@ -98,8 +98,8 @@ public class MainDBContext : DbContext {
                 .HasColumnType("INT")
                 .IsRequired();
 
-            entity.HasOne(a => a.Employee)
-                .WithOne(e => e.Astronaut)
+            entity.HasOne(a => a.employee)
+                .WithOne(e => e.astronaut)
                 .HasForeignKey<Astronaut>(a => a.ID)
                 .OnDelete(DeleteBehavior.Cascade);
             
@@ -115,7 +115,7 @@ public class MainDBContext : DbContext {
                 .IsRequired();
 
             entity.HasOne(s => s.Employee)
-                .WithOne(e => e.Scientist)
+                .WithOne(e => e.scientist)
                 .HasForeignKey<Scientist>(s => s.ID)
                 .OnDelete(DeleteBehavior.Cascade);
         });
@@ -323,13 +323,12 @@ public class MainDBContext : DbContext {
         // Scientist & Mission joint (for Many-To-Many Relationship)
         modelBuilder.Entity<Joint_Scientist_Mission>(entity => {
             // Mission foreignkey and as primary key
-            entity.HasKey(SM => SM.MissionID);
+            entity.HasKey(j => new { j.ScientistID, j.MissionID });
             entity.Property(SM => SM.MissionID)
                 .HasColumnType("INT")
                 .IsRequired();
             entity.HasOne(SM => SM.mission)
                 .WithMany(M => M.joint_scientist_missions)
-                .HasForeignKey(SM => SM.MissionID)
                 .OnDelete(DeleteBehavior.Cascade);
             
             // Scientist foreignkey
@@ -424,7 +423,7 @@ public class MainDBContext : DbContext {
                 ID = 1,
                 Name = "Apollo 11",
                 Duration = 8,
-                CurrentStatus = (int)Mission.Status.Completed,
+                CurrentStatus = Mission.Status.Completed,
                 Type = "Lunar Landing",
                 LaunchDate = new DateOnly(1969, 7, 16),
 
@@ -439,7 +438,7 @@ public class MainDBContext : DbContext {
                 ID = 2,
                 Name = "Mars Explorer",
                 Duration = 300,
-                CurrentStatus = (int)Mission.Status.Planned,
+                CurrentStatus = Mission.Status.Planned,
                 Type = "Mars Mission",
                 LaunchDate = new DateOnly(2030, 3, 1),
 

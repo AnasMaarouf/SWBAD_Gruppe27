@@ -140,14 +140,14 @@ namespace AarhusSpaceProgram.Migrations
                     FullName = table.Column<string>(type: "NVARCHAR(50)", nullable: false),
                     HireDate = table.Column<DateOnly>(type: "DATE", nullable: false),
                     FK_DepartmentID = table.Column<int>(type: "int", nullable: true),
-                    DepartmentID = table.Column<int>(type: "INT", nullable: true)
+                    departmentID = table.Column<int>(type: "INT", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Emplyees", x => x.ID);
                     table.ForeignKey(
-                        name: "FK_Emplyees_Departments_DepartmentID",
-                        column: x => x.DepartmentID,
+                        name: "FK_Emplyees_Departments_departmentID",
+                        column: x => x.departmentID,
                         principalTable: "Departments",
                         principalColumn: "ID");
                 });
@@ -243,12 +243,12 @@ namespace AarhusSpaceProgram.Migrations
                 name: "JointScientistMissions",
                 columns: table => new
                 {
-                    MissionID = table.Column<int>(type: "INT", nullable: false),
-                    ScientistID = table.Column<int>(type: "INT", nullable: false)
+                    ScientistID = table.Column<int>(type: "INT", nullable: false),
+                    MissionID = table.Column<int>(type: "INT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_JointScientistMissions", x => x.MissionID);
+                    table.PrimaryKey("PK_JointScientistMissions", x => new { x.ScientistID, x.MissionID });
                     table.ForeignKey(
                         name: "FK_JointScientistMissions_Missions_MissionID",
                         column: x => x.MissionID,
@@ -283,16 +283,16 @@ namespace AarhusSpaceProgram.Migrations
 
             migrationBuilder.InsertData(
                 table: "Emplyees",
-                columns: new[] { "ID", "DepartmentID", "FK_DepartmentID", "FullName", "HireDate" },
+                columns: new[] { "ID", "FK_DepartmentID", "FullName", "HireDate", "departmentID" },
                 values: new object[,]
                 {
-                    { 1, null, null, "Neil Armstrong", new DateOnly(1, 1, 1) },
-                    { 2, null, null, "Buzz Aldrin", new DateOnly(1, 1, 1) },
-                    { 3, null, null, "Sally Ride", new DateOnly(1, 1, 1) },
-                    { 4, null, null, "Carl Sagan", new DateOnly(1, 1, 1) },
-                    { 5, null, null, "Jane Foster", new DateOnly(1, 1, 1) },
-                    { 6, null, null, "Alice Johnson", new DateOnly(1, 1, 1) },
-                    { 7, null, null, "Bob Smith", new DateOnly(1, 1, 1) }
+                    { 1, null, "Neil Armstrong", new DateOnly(1, 1, 1), null },
+                    { 2, null, "Buzz Aldrin", new DateOnly(1, 1, 1), null },
+                    { 3, null, "Sally Ride", new DateOnly(1, 1, 1), null },
+                    { 4, null, "Carl Sagan", new DateOnly(1, 1, 1), null },
+                    { 5, null, "Jane Foster", new DateOnly(1, 1, 1), null },
+                    { 6, null, "Alice Johnson", new DateOnly(1, 1, 1), null },
+                    { 7, null, "Bob Smith", new DateOnly(1, 1, 1), null }
                 });
 
             migrationBuilder.InsertData(
@@ -375,9 +375,9 @@ namespace AarhusSpaceProgram.Migrations
                 column: "FK_managerID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Emplyees_DepartmentID",
+                name: "IX_Emplyees_departmentID",
                 table: "Emplyees",
-                column: "DepartmentID");
+                column: "departmentID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_JointAstronautCrews_AstronautID",
@@ -385,9 +385,9 @@ namespace AarhusSpaceProgram.Migrations
                 column: "AstronautID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_JointScientistMissions_ScientistID",
+                name: "IX_JointScientistMissions_MissionID",
                 table: "JointScientistMissions",
-                column: "ScientistID");
+                column: "MissionID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Missions_FK_CelestialID",
