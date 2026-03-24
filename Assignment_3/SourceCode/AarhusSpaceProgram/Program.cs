@@ -15,8 +15,8 @@ builder.Services.AddDbContext<MainDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 Log.Information("Test log - app started");
-// Controllers
 
+// Controllers
 builder.Services.AddControllers();
 
 builder.Services.AddOpenApi(options =>
