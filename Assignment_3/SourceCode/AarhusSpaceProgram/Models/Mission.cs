@@ -2,15 +2,15 @@
 
 public class Mission {
     public int ID { get; set; }  // Primary Key for Mission
-    public string Name { get; set; } = "";
+    public string Name { get; set; }
     public int Duration { get; set; }
-    public int CurrentStatus { get; set; }
-    public string Type { get; set; } = "";
+    public Status CurrentStatus { get; set; }
+    public string Type { get; set; }
     public DateOnly? LaunchDate { get; set; }
     
     // Foreign Key for rocket.
     public int FK_RocketID { get; set; }
-    public Rocket? AssignedRocket { get; set; }  // Navigation to Rocket
+    public Rocket AssignedRocket { get; set; }  // Navigation to Rocket
     
     // Foreign Key for launchpad.
     public int? FK_launchpadID { get; set; }

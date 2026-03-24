@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AarhusSpaceProgram.Migrations
 {
     [DbContext(typeof(MainDBContext))]
-    [Migration("20260321202159_0001-InitialCreate")]
+    [Migration("20260324061516_0001-InitialCreate")]
     partial class _0001InitialCreate
     {
         /// <inheritdoc />
@@ -182,9 +182,6 @@ namespace AarhusSpaceProgram.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
 
-                    b.Property<int?>("DepartmentID")
-                        .HasColumnType("INT");
-
                     b.Property<int?>("FK_DepartmentID")
                         .HasColumnType("int");
 
@@ -195,9 +192,12 @@ namespace AarhusSpaceProgram.Migrations
                     b.Property<DateOnly>("HireDate")
                         .HasColumnType("DATE");
 
+                    b.Property<int?>("departmentID")
+                        .HasColumnType("INT");
+
                     b.HasKey("ID");
 
-                    b.HasIndex("DepartmentID");
+                    b.HasIndex("departmentID");
 
                     b.ToTable("Emplyees", (string)null);
 
@@ -263,28 +263,28 @@ namespace AarhusSpaceProgram.Migrations
 
             modelBuilder.Entity("Joint_Scientist_Mission", b =>
                 {
-                    b.Property<int>("MissionID")
-                        .HasColumnType("INT");
-
                     b.Property<int>("ScientistID")
                         .HasColumnType("INT");
 
-                    b.HasKey("MissionID");
+                    b.Property<int>("MissionID")
+                        .HasColumnType("INT");
 
-                    b.HasIndex("ScientistID");
+                    b.HasKey("ScientistID", "MissionID");
+
+                    b.HasIndex("MissionID");
 
                     b.ToTable("JointScientistMissions");
 
                     b.HasData(
                         new
                         {
-                            MissionID = 1,
-                            ScientistID = 4
+                            ScientistID = 4,
+                            MissionID = 1
                         },
                         new
                         {
-                            MissionID = 2,
-                            ScientistID = 5
+                            ScientistID = 5,
+                            MissionID = 2
                         });
                 });
 
@@ -516,13 +516,13 @@ namespace AarhusSpaceProgram.Migrations
 
             modelBuilder.Entity("Astronaut", b =>
                 {
-                    b.HasOne("Employee", "Employee")
-                        .WithOne("Astronaut")
+                    b.HasOne("Employee", "employee")
+                        .WithOne("astronaut")
                         .HasForeignKey("Astronaut", "ID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Employee");
+                    b.Navigation("employee");
                 });
 
             modelBuilder.Entity("CelestialBody", b =>
@@ -548,11 +548,11 @@ namespace AarhusSpaceProgram.Migrations
 
             modelBuilder.Entity("Employee", b =>
                 {
-                    b.HasOne("Department", "Department")
-                        .WithMany()
-                        .HasForeignKey("DepartmentID");
+                    b.HasOne("Department", "department")
+                        .WithMany("employees")
+                        .HasForeignKey("departmentID");
 
-                    b.Navigation("Department");
+                    b.Navigation("department");
                 });
 
             modelBuilder.Entity("Joint_Astronaut_Crew", b =>
@@ -596,7 +596,7 @@ namespace AarhusSpaceProgram.Migrations
             modelBuilder.Entity("Manager", b =>
                 {
                     b.HasOne("Employee", "Employee")
-                        .WithOne("Manager")
+                        .WithOne("manager")
                         .HasForeignKey("Manager", "ID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -648,7 +648,7 @@ namespace AarhusSpaceProgram.Migrations
             modelBuilder.Entity("Scientist", b =>
                 {
                     b.HasOne("Employee", "Employee")
-                        .WithOne("Scientist")
+                        .WithOne("scientist")
                         .HasForeignKey("Scientist", "ID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -675,13 +675,18 @@ namespace AarhusSpaceProgram.Migrations
                     b.Navigation("joint_Astronaut_Crew");
                 });
 
+            modelBuilder.Entity("Department", b =>
+                {
+                    b.Navigation("employees");
+                });
+
             modelBuilder.Entity("Employee", b =>
                 {
-                    b.Navigation("Astronaut");
+                    b.Navigation("astronaut");
 
-                    b.Navigation("Manager");
+                    b.Navigation("manager");
 
-                    b.Navigation("Scientist");
+                    b.Navigation("scientist");
                 });
 
             modelBuilder.Entity("Launchpad", b =>

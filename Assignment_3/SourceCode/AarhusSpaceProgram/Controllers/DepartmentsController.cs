@@ -1,13 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AarhusSpaceProgram.DTOs;
 
 [ApiController]
 [Route("api/[controller]")]
 public class DepartmentsController : ControllerBase
 {
     private readonly MainDBContext _context;
-    private readonly ILogger<DepartmentsController> _logger; 
+    private readonly ILogger<DepartmentsController> _logger;
 
     public DepartmentsController(MainDBContext context, ILogger<DepartmentsController> logger)
     {
@@ -18,82 +17,111 @@ public class DepartmentsController : ControllerBase
     // GET: api/Departments
     // Gets all Departments
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<DepartmentDto>>> GetDepartments()
+    public async Task<ActionResult<IEnumerable<DepartmentResponseDTO>>> GetDepartments()
     {
-        return await _context.Departments
-            .Select(d => new DepartmentDto {
-                ID = d.ID,
-                Name = d.name,
-                ManagerName = d.manager != null ? d.manager.Employee.FullName : null
-            })
-            .ToListAsync();
+        var departments = await _context.Departments.Select(dto => new DepartmentResponseDTO{
+            ID = dto.ID,
+            DepartmentName = dto.name,
+            Manager = dto.manager.Employee.FullName
+        }).ToListAsync();
+
+        if(departments == null)
+            return NotFound("No departments found");
+
+        return Ok(departments);
     }
 
     // GET: api/Departments/{id}
     // Gets department from id (primary key)
     [HttpGet("{id}")]
-    public async Task<ActionResult<DepartmentDto>> GetDepartment(int id)
+    public async Task<ActionResult<DetailedDepartmentResponseDTO>> GetDepartment(int id)
     {
         var department = await _context.Departments
-            .Where(d => d.ID == id)
-            .Select(d => new DepartmentDto {
-                ID = d.ID,
-                Name = d.name,
-                ManagerName = d.manager != null ? d.manager.Employee.FullName : null
+            .Include(d => d.employees)
+            .Select(dto => new DetailedDepartmentResponseDTO{
+                ID = dto.ID,
+                DepartmentName = dto.name,
+                Manager = dto.manager.Employee.FullName,
+                employees = dto.employees.Select(e => e.FullName).ToList()
             })
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(d => d.ID == id);
 
         if (department == null)
-            return NotFound();
+            return NotFound("Department " + id + " does not exist");
 
-        return Ok(department);
+        return department;
     }
 
     // POST: api/Departments
     // Creates an department
     [HttpPost]
-    public async Task<ActionResult<DepartmentDto>> CreateDepartment(DepartmentCreateDto dto)
+    public async Task<ActionResult<Department>> CreateDepartment(CreateDepartmentDTO dto)
     {
-        var department = new Department {
-            name = dto.Name,
-            FK_managerID = dto.FK_ManagerID ?? 0
+        var managerExist = await _context.Managers.FirstOrDefaultAsync(d => d.ID == dto.ManagerID);
+        if(managerExist == null) {
+            // Logging
+            var timestamp = new DateTimeOffset(DateTime.UtcNow);
+            var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 404, Timestamp = timestamp };
+            _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
+            return NotFound("Manager does not exist");
+        }
+
+        var department = new Department
+        {
+            name = dto.DepartmentName,
+            FK_managerID = dto.ManagerID
         };
 
         _context.Departments.Add(department);
         await _context.SaveChangesAsync();
+        
+        {   // Logging
+            var timestamp = new DateTimeOffset(DateTime.UtcNow);
+            var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
+            _logger.LogInformation("Request called {@LogInfo}", logInfo);
+        }
 
-        var timestamp = new DateTimeOffset(DateTime.UtcNow);
-        var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 201, Timestamp = timestamp };
-        _logger.LogInformation("Request called {@LogInfo}", logInfo);
-
-        return CreatedAtAction(nameof(GetDepartment), new { id = department.ID }, new DepartmentDto {
-            ID = department.ID,
-            Name = department.name
-        });
+        return CreatedAtAction(nameof(GetDepartment), new { id = department.ID }, department);
     }
 
     // PUT: api/Departments/{id}
     // Updates department on id
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateDepartment(int id, DepartmentUpdateDto dto)
-    {
-        if (id != dto.ID)
-            return BadRequest();
-
-        var department = await _context.Departments.FindAsync(id);
-        if (department == null)
+    public async Task<IActionResult> UpdateDepartment(int id, UpdateDepartmentDTO dto) {
+        var department = await _context.Departments
+            .FirstOrDefaultAsync(d => d.ID == id);
+        
+        if (!_context.Departments.Any(d => d.ID == id)) {
+            // Logging
+            var timestamp = new DateTimeOffset(DateTime.UtcNow);
+            var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 404, Timestamp = timestamp };
+            _logger.LogInformation("Request called {@LogInfo}", logInfo);
             return NotFound();
+        }
 
-        department.name = dto.Name;
-        department.FK_managerID = dto.FK_ManagerID ?? 0;
+        var managerExist = await _context.Managers.FirstOrDefaultAsync(d => d.ID == dto.ManagerID);
+        if(managerExist == null) {
+            // Logging
+            var timestamp = new DateTimeOffset(DateTime.UtcNow);
+            var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 404, Timestamp = timestamp };
+            _logger.LogInformation("Request called {@LogInfo}", logInfo);
 
+            return NotFound("Manager does not exist");
+        }
+
+        department.FK_managerID = dto.ManagerID;
+        department.name = dto.DepartmentName;
+                
         await _context.SaveChangesAsync();
 
-        var timestamp = new DateTimeOffset(DateTime.UtcNow);
-        var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
-        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+        {   // Logging
+            var timestamp = new DateTimeOffset(DateTime.UtcNow);
+            var logInfo = new { Method = "PUT", Path = Request.Path, StatusCode = 200, Timestamp = timestamp };
+            _logger.LogInformation("Request called {@LogInfo}", logInfo);
+        }
 
-        return NoContent();
+        return Ok("Department updated");
     }
 
     // DELETE: api/Departments/{id}
@@ -102,15 +130,23 @@ public class DepartmentsController : ControllerBase
     public async Task<IActionResult> DeleteDepartment(int id)
     {
         var department = await _context.Departments.FindAsync(id);
-        if (department == null)
+        if (department == null) {
+            // Logging
+            var timestamp = new DateTimeOffset(DateTime.UtcNow);
+            var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 404, Timestamp = timestamp };
+            _logger.LogInformation("Request called {@LogInfo}", logInfo);
+
             return NotFound();
+        }
 
         _context.Departments.Remove(department);
         await _context.SaveChangesAsync();
 
-        var timestamp = new DateTimeOffset(DateTime.UtcNow);
-        var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
-        _logger.LogInformation("Request called {@LogInfo}", logInfo);
+        {   // Logging
+            var timestamp = new DateTimeOffset(DateTime.UtcNow);
+            var logInfo = new { Method = "DELETE", Path = Request.Path, StatusCode = 204, Timestamp = timestamp };
+            _logger.LogInformation("Request called {@LogInfo}", logInfo);
+        }
 
         return NoContent();
     }
