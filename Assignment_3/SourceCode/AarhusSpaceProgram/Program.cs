@@ -9,7 +9,6 @@ builder.Services.AddDbContext<MainDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
-
 // Controllers
 builder.Services.AddControllers();
 
