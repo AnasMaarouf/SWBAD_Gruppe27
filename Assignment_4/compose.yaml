@@ -1,0 +1,47 @@
+
+services:
+  mongo:
+    image: mongo
+    container_name: mongodb
+    restart: "no"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+      ME_CONFIG_BASICAUTH_ENABLED: true
+      ME_CONFIG_BASICAUTH_USERNAME: mongoexpressuser
+      ME_CONFIG_BASICAUTH_PASSWORD: mongoexpresspass
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: sqlserver
+    restart: "no"
+
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Abcd123456!"
+      MSSQL_PID: "Developer"
+
+    ports:
+      - "1433:1433"
+    
+    # Kept commented as data is not needed to be saved for the demonstrated.
+    volumes:
+      - sqlserver_data:/home/anasmaarouf/Desktop/SW4BAD/Assignment 2/SourceCode/DB/
+
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+
+# Kept commented as data is not needed to be saved for the demonstrated.
+volumes:
+  sqlserver_data:
+

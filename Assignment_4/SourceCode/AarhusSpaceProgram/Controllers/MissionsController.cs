@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualBasic;
+using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class MissionsController : ControllerBase
 {
     private readonly MainDBContext _context;
@@ -16,6 +17,7 @@ public class MissionsController : ControllerBase
     // GET: api/missions
     // Gets all missions
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<MissionResponseDTO>>> GetMissions() {
         var missions = await _context.Missions
         .Include(m => m.AssignedRocket)
@@ -41,6 +43,7 @@ public class MissionsController : ControllerBase
 
     // Gets all missions with one specific celestialbody as target
     [HttpGet("getbyplanet/{TargetCelestialBody}")]
+    [Authorize(Roles = "Astronaut, Manager, Admin")]
     public async Task<ActionResult<IEnumerable<Mission>>> GetMissions(string TargetCelestialBody) {
         var missions = await _context.Missions
         .Include(m => m.celestialBody)
@@ -63,6 +66,7 @@ public class MissionsController : ControllerBase
     // GET: api/missions/{id}
     // Gets mission from id (primary key)
     [HttpGet("{id}")]
+    [Authorize(Roles = "Astronaut, Manager, Admin")]
     public async Task<IActionResult> GetMission(int id)
     {
         var mission = await _context.Missions
@@ -95,9 +99,19 @@ public class MissionsController : ControllerBase
         return Ok(mission);
     }
 
+
+
+    [HttpGet("{id}/logs")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetMissionLog(int id, MissionLogDTO dto) {
+        // CODE MISSING
+        return Ok("Mission logs received!");
+    }
+
     // POST: api/missions
     // Creates mission
     [HttpPost]
+    [Authorize(Roles = "Manager, Admin")]
     public async Task<ActionResult<CreateMissionDTO>> CreateMission(CreateMissionDTO dto) {
         if (dto.LaunchpadId != null) {
             var LaunchPadExists = await _context.Missions
@@ -193,6 +207,7 @@ public class MissionsController : ControllerBase
     // PUT: api/missions/{id}
     // Updates mission on id
     [HttpPut("{id}")]
+    [Authorize(Roles = "Manager, Admin")]
     public async Task<IActionResult> UpdateMission(int id, UpdateMissionDTO dto) {
         
         
@@ -294,6 +309,7 @@ public class MissionsController : ControllerBase
     // DELETE: api/missions/{id}
     // Deletes Mission by id
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Manager, Admin")]
     public async Task<IActionResult> DeleteMission(int id) {
         var mission = await _context.Missions.FindAsync(id);
         if (mission == null) {
@@ -319,6 +335,7 @@ public class MissionsController : ControllerBase
     // PUT: api/Missions/{id}/assign-crew-mission
     // Assign crew to mission
     [HttpPut("{id}/assign-crew-mission")]
+    [Authorize(Roles = "Manager, Admin")]
     public IActionResult AssignCrewToMission(int id, AddCrewToMissionDTO dto)
     {
         var mission = _context.Missions.Find(id);
@@ -347,7 +364,9 @@ public class MissionsController : ControllerBase
         return Ok("Crew assigned to mission");
     }
 
+    // Unassign astronaut to crew
     [HttpPost("{id}/Unassign-to-crew")]
+    [Authorize(Roles = "Manager, Admin")]
     public async Task<IActionResult> UnassignCrewToMission(int id, RemoveCrewFromMissionDTO dto)
     {
         var mission = _context.Missions.Find(id);

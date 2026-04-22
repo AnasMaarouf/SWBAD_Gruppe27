@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class AstronautsController : ControllerBase
 {
     private readonly MainDBContext _context;
@@ -17,6 +19,7 @@ public class AstronautsController : ControllerBase
     // GET: api/astronauts/{id}
     // Gets astronaut from id (primary key), and orders them based on flighthours
     [HttpGet("OrderByExperience")]
+    [Authorize(Roles = "Astronaut, Manager, Admin")]
     public async Task<ActionResult<AstronautResponseDTO>> GetAstronaut_OrderByExperience()
     {
         var astronauts = await _context.Astronauts
@@ -39,6 +42,7 @@ public class AstronautsController : ControllerBase
     // GET: api/astronauts
     // Gets all astronauts
     [HttpGet]
+    [Authorize(Roles = "Astronaut, Manager, Admin")]
     public async Task<ActionResult<IEnumerable<AstronautResponseDTO>>> GetAstronauts() {
         var astronauts = await _context.Astronauts.Select(a => new AstronautResponseDTO {
                 Id = a.ID,
@@ -62,6 +66,7 @@ public class AstronautsController : ControllerBase
     // GET: api/astronauts/{id}
     // Gets astronaut from id (primary key)
     [HttpGet("{id}")]
+    [Authorize(Roles = "Astronaut, Manager, Admin")]
     public async Task<ActionResult<AstronautResponseDTO>> GetAstronaut(int id)
     {
         var astronaut = await _context.Astronauts
@@ -87,6 +92,7 @@ public class AstronautsController : ControllerBase
     // POST: api/astronauts
     // Creates an astronaut
     [HttpPost]
+    [Authorize(Roles = "Manager, Admin")]
     public async Task<ActionResult<CreateAstronautDTO>> CreateAstronaut(CreateAstronautDTO dto) {
         var ifExists = await _context.Astronauts.FirstOrDefaultAsync(a => a.ID == dto.EmployeeId);
 
@@ -95,6 +101,15 @@ public class AstronautsController : ControllerBase
             var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 409, Timestamp = timestamp };
             _logger.LogInformation("Request called {@LogInfo}", logInfo);
             return Conflict("Astronaut already exists");
+        }
+
+        var ifEmployeeExists = await _context.Employees.FirstOrDefaultAsync(e => e.ID == dto.EmployeeId);
+
+        if(ifExists == null) {
+            var timestamp = new DateTimeOffset(DateTime.UtcNow);
+            var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 409, Timestamp = timestamp };
+            _logger.LogInformation("Request called {@LogInfo}", logInfo);
+            return Conflict("Employee does not exist");
         }
 
         var astronaut = new Astronaut {
@@ -117,6 +132,7 @@ public class AstronautsController : ControllerBase
     // PUT: api/astronauts/{id}
     // Updates astronaut on id
     [HttpPut("{id}")]
+    [Authorize(Roles = "Manager, Admin")]
     public async Task<IActionResult> UpdateAstronaut(int id, UpdateAstronautDTO astronaut) {
         var oldAstronaut = await _context.Astronauts.FindAsync(id);
 
@@ -145,6 +161,7 @@ public class AstronautsController : ControllerBase
     // DELETE: api/astronauts/{id}
     // Deletes astronaut by id
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Manager, Admin")]
     public async Task<IActionResult> DeleteAstronaut(int id)
     {
         var astronaut = await _context.Astronauts.FindAsync(id);
@@ -167,6 +184,7 @@ public class AstronautsController : ControllerBase
     }
 
     [HttpPut("{id}/assign-to-crew")]
+    [Authorize(Roles = "Manager, Admin")]
     public async Task<IActionResult> AssignAstronautToCrew(int id, AddAstronautToCrewDTO dto)
     {
         var astronautExists = await _context.Astronauts
@@ -207,6 +225,7 @@ public class AstronautsController : ControllerBase
     }
 
     [HttpDelete("{id}/unassign-to-crew")]
+    [Authorize(Roles = "Manager, Admin")]
     public async Task<IActionResult> UnassignAstronautToCrew(int id, RemoveAstronautToCrewDTO dto)
     {
         var relation = await _context.JointAstronautCrews

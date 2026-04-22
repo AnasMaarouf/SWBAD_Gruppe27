@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Perso\\Desktop\\SWBADmodified\\SWBAD_Gruppe27\\Assignment_3\\SourceCode\\AarhusSpaceProgram\\AarhusSpaceProgram.csproj": {}
+    "/home/anasmaarouf/Desktop/SW4BAD/Assignment 3/SWBAD_Gruppe27/Assignment_3/SourceCode/AarhusSpaceProgram/AarhusSpaceProgram.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Perso\\Desktop\\SWBADmodified\\SWBAD_Gruppe27\\Assignment_3\\SourceCode\\AarhusSpaceProgram\\AarhusSpaceProgram.csproj": {
+    "/home/anasmaarouf/Desktop/SW4BAD/Assignment 3/SWBAD_Gruppe27/Assignment_3/SourceCode/AarhusSpaceProgram/AarhusSpaceProgram.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Perso\\Desktop\\SWBADmodified\\SWBAD_Gruppe27\\Assignment_3\\SourceCode\\AarhusSpaceProgram\\AarhusSpaceProgram.csproj",
+        "projectUniqueName": "/home/anasmaarouf/Desktop/SW4BAD/Assignment 3/SWBAD_Gruppe27/Assignment_3/SourceCode/AarhusSpaceProgram/AarhusSpaceProgram.csproj",
         "projectName": "AarhusSpaceProgram",
-        "projectPath": "C:\\Users\\Perso\\Desktop\\SWBADmodified\\SWBAD_Gruppe27\\Assignment_3\\SourceCode\\AarhusSpaceProgram\\AarhusSpaceProgram.csproj",
-        "packagesPath": "C:\\Users\\Perso\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Perso\\Desktop\\SWBADmodified\\SWBAD_Gruppe27\\Assignment_3\\SourceCode\\AarhusSpaceProgram\\obj\\",
+        "projectPath": "/home/anasmaarouf/Desktop/SW4BAD/Assignment 3/SWBAD_Gruppe27/Assignment_3/SourceCode/AarhusSpaceProgram/AarhusSpaceProgram.csproj",
+        "packagesPath": "/home/anasmaarouf/.nuget/packages/",
+        "outputPath": "/home/anasmaarouf/Desktop/SW4BAD/Assignment 3/SWBAD_Gruppe27/Assignment_3/SourceCode/AarhusSpaceProgram/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Perso\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/home/anasmaarouf/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -112,7 +112,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.200/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.201/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
