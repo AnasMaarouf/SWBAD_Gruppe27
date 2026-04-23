@@ -57,10 +57,3 @@ public class UpdateMissionDTO
     public int ManagerId { get; set; }
     public int CelestialBodyId { get; set; }
 }
-
-public class MissionLogDTO {
-    public string MissionID { get; set; }
-    public string MissionName { get; set; }
-    public string Message { get; set; }
-    public DateTime TimeStamp {get; set; }
-}

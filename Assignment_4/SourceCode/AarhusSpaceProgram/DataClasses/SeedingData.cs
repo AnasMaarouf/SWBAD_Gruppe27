@@ -1,29 +1,55 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-class SeedingData {
-    
-    public static async Task SeedUser(IServiceProvider services, ApiUser seededUser, string Password, string Role) {
+
+class SeedingData
+{
+    public static async Task SeedUser(
+        IServiceProvider services,
+        ApiUser seededUser,
+        string password,
+        string role)
+    {
         var userManager = services.GetRequiredService<UserManager<ApiUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
+        // Check if user exists
+        var user = await userManager.FindByEmailAsync(seededUser.Email);
 
-        var User = await userManager.FindByEmailAsync(seededUser.Email);
-
-        if (User == null) {
-            var user = new ApiUser {
+        if (user == null)
+        {
+            var newUser = new ApiUser
+            {
+                UserName = seededUser.Email,
                 Email = seededUser.Email,
                 FullName = seededUser.FullName,
                 EmailConfirmed = true
             };
 
-            var result = await userManager.CreateAsync(user, Password);
+            var createResult = await userManager.CreateAsync(newUser, password);
 
-            if (result.Succeeded) {
-                if (!await roleManager.RoleExistsAsync(Role)){
-                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                    throw new Exception($"Failed to assign user to role: {Role}");
-                }
-                await userManager.AddToRoleAsync(user, Role);
+            if (!createResult.Succeeded)
+            {
+                var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                throw new Exception($"User creation failed: {errors}");
+            }
+
+            user = newUser;
+        }
+
+        // Ensure role exists
+        if (!await roleManager.RoleExistsAsync(role))
+        {
+            await roleManager.CreateAsync(new IdentityRole(role));
+        }
+
+        // Assign role
+        if (!await userManager.IsInRoleAsync(user, role))
+        {
+            var roleResult = await userManager.AddToRoleAsync(user, role);
+
+            if (!roleResult.Succeeded)
+            {
+                var errors = string.Join(", ", roleResult.Errors.Select(e => e.Description));
+                throw new Exception($"Role assignment failed: {errors}");
             }
         }
     }

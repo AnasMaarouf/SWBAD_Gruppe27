@@ -12,7 +12,6 @@ using BCrypt.Net;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class AccountController : ControllerBase
 {
     private readonly MainDBContext _context;
@@ -29,14 +28,41 @@ public class AccountController : ControllerBase
         _signInManager = signInManager;
     }
 
-    private string GenerateToken(string username) {
-        var claims = new Claim[] {
-            new Claim(ClaimTypes.Name, username),
-            new Claim(JwtRegisteredClaimNames.Nbf, new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds().ToString()),
-            new Claim(JwtRegisteredClaimNames.Exp, new DateTimeOffset(DateTime.Now.AddDays(1)).ToUnixTimeSeconds().ToString())
+
+    private async Task<string> GenerateToken(ApiUser user)
+    {
+        var key = _configuration["JWT:SigningKey"];
+        var issuer = _configuration["JWT:Issuer"];
+        var audience = _configuration["JWT:Audience"];
+
+        var roles = await _userManager.GetRolesAsync(user);
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.Name, user.Email),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
-        
-        var token = new JwtSecurityToken( new JwtHeader(new SigningCredentials( new SymmetricSecurityKey(Encoding.UTF8.GetBytes("the secret that needs to be at least 16 characeters long for HmacSha256")), SecurityAlgorithms.HmacSha256)), new JwtPayload(claims));
+
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
+
+        var credentials = new SigningCredentials(
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+            SecurityAlgorithms.HmacSha256
+        );
+
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(30),
+            signingCredentials: credentials
+        );
+
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
     
@@ -83,21 +109,26 @@ public class AccountController : ControllerBase
         }
     }
 
-    [HttpPost]
-    [Route("Login")] 
+    [HttpPost("login")]
     [AllowAnonymous]
     public async Task<ActionResult> Login(LoginDTO input)
     {
         var user = await _userManager.FindByEmailAsync(input.Email);
-        if (user == null) {
-            ModelState.AddModelError(string.Empty, "Invalid login");
-            return BadRequest(ModelState);
-        }
-        var passwordSignInResult = await _signInManager.CheckPasswordSignInAsync(user, input.Password, false);
-        
-        if (passwordSignInResult.Succeeded)
-            return new ObjectResult(GenerateToken(input.Email));
-        
-        return BadRequest("Invalid login");
+
+        if (user == null)
+            return Unauthorized("user not found");
+
+        var result = await _signInManager.CheckPasswordSignInAsync(user, input.Password, false);
+
+        if (!result.Succeeded)
+            return Unauthorized();
+
+        var token = await GenerateToken(user);
+
+        return Ok(new
+        {
+            token
+        });
     }
 }
+

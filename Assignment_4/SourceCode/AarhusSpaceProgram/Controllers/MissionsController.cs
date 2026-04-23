@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using MongoDB.Bson;
+using MongoDB.Driver;
+
 
 [ApiController]
 [Route("api/[controller]")]
@@ -9,6 +12,7 @@ public class MissionsController : ControllerBase
 {
     private readonly MainDBContext _context;
     private readonly ILogger<ManagersController> _logger;
+    private IMongoCollection<BsonDocument> _logCollection;
     public MissionsController(MainDBContext context, ILogger<ManagersController> logger) {
         _context = context;
         _logger = logger;
@@ -99,14 +103,28 @@ public class MissionsController : ControllerBase
         return Ok(mission);
     }
 
-
-
+    // GET: api/missions/{id}/logs
+    // Gets mission logs from id
     [HttpGet("{id}/logs")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetMissionLog(int id, MissionLogDTO dto) {
-        // CODE MISSING
-        return Ok("Mission logs received!");
+    public async Task<IActionResult> GetMission(int id, int limit = 50)
+    {
+        var client = new MongoClient("mongodb://localhost:27017");
+        var database = client.GetDatabase("AarhusSpaceProgramLogDB");
+        _logCollection = database.GetCollection<BsonDocument>("ActiveMissionsLog");
+
+        var missionLogs = await _logCollection
+            .Find(log => log["MissionID"] == id)
+            .SortByDescending(log => log["CreatedAt"])
+            .Limit(limit)
+            .ToListAsync();
+
+
+        if (missionLogs == null)
+            return NotFound("No missionlogs found");
+        return Ok(missionLogs);
     }
+
 
     // POST: api/missions
     // Creates mission
@@ -227,7 +245,8 @@ public class MissionsController : ControllerBase
             var LaunchPadIsReserved = await _context.Missions
                 .AnyAsync(m =>
                     m.FK_launchpadID == dto.LaunchpadId &&
-                    m.LaunchDate == dto.LaunchDate
+                    m.LaunchDate == dto.LaunchDate &&
+                    m.ID != id
                 );
 
             if (LaunchPadIsReserved) {
@@ -255,9 +274,9 @@ public class MissionsController : ControllerBase
         
 
         var RocketExists = await _context.Rockets
-                .AnyAsync(r => r.ID == dto.RocketId && r.Mission == null);
+                .AnyAsync(r => r.ID == dto.RocketId && r.Mission == null && r.ID != dto.RocketId);
 
-        if (!RocketExists) {
+        if (RocketExists) {
             // Logging
             var timestamp = new DateTimeOffset(DateTime.UtcNow);
             var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 400, Timestamp = timestamp };
@@ -265,8 +284,11 @@ public class MissionsController : ControllerBase
             return BadRequest("Rocket does not exist or is reserved for a different mission");
         }
 
+
+       
+
         var celestialBodyExists = await _context.CelestialBodies
-                .AnyAsync(r => r.ID == dto.CelestialBodyId);
+                .AnyAsync(CB => CB.ID == dto.CelestialBodyId && CB.ID != dto.CelestialBodyId);
 
         if (celestialBodyExists == null) {
             // Logging

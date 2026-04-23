@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using Scalar.AspNetCore;
 using Serilog;
+using System.Text;
+using Scalar.AspNetCore;
+using System.IO.Pipelines;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,72 +23,101 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+
 // ----------------------
 // Services
 // ----------------------
 
-// context connectionstring
+// DB Context
 builder.Services.AddDbContext<MainDBContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"))
-        .EnableSensitiveDataLogging()   // optional (dev only!)
-        .LogTo(Log.Information)         // logs EF Core queries via Serilog
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+        .EnableSensitiveDataLogging()
+        .LogTo(Log.Information)
 );
 
 // Controllers
 builder.Services.AddControllers();
 
-// adds background services.
+// ✅ OPENAPI (NO SWAGGER)
+builder.Services.AddOpenApi();
+
+// Background services
 builder.Services.AddHttpClient();
 builder.Services.AddHostedService<ActiveMissionsBackgroundService>();
 
-// adds OpenAPI
-builder.Services.AddOpenApi();
-
-// adds user services
-builder.Services.AddIdentity<ApiUser, IdentityRole>(options => {
+// Identity
+builder.Services.AddIdentity<ApiUser, IdentityRole>(options =>
+{
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
     options.Password.RequireNonAlphanumeric = true;
     options.Password.RequiredLength = 8;
-}).AddEntityFrameworkStores<MainDBContext>();
+})
+.AddEntityFrameworkStores<MainDBContext>();
 
-builder.Services.AddAuthentication(options => {
-    options.DefaultSignOutScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options => {
-    options.TokenValidationParameters = new TokenValidationParameters {
-        ValidateIssuer = true,
-        ValidIssuer = builder.Configuration["JWT:Issuer"],
-        ValidateAudience = true,
-        ValidAudience = builder.Configuration["JWT:Audience"],
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT:SigningKey"]))
-    };
+// JWT Authentication
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options => {
+    var key = builder.Configuration["JWT:SigningKey"];
+
+    if (string.IsNullOrEmpty(key))
+        throw new Exception("JWT:SigningKey is missing in appsettings.json");
+
+    
+        options.TokenValidationParameters = new TokenValidationParameters {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["JWT:Issuer"],
+
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["JWT:Audience"],
+
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(key)
+            ),
+
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
 });
 
+
+
+
+// ----------------------
+// Build app
+// ----------------------
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope()) {
-     var services = scope.ServiceProvider;
+
+// ----------------------
+// Seed data
+// ----------------------
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
 
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-    var userManager = services.GetRequiredService<UserManager<ApiUser>>();
 
-    // Creating user roles
     string[] roles = { "Admin", "Astronaut", "Scientist", "Manager" };
 
-    foreach (var role in roles) {
-        if (!await roleManager.RoleExistsAsync(role)) {
+    foreach (var role in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+        {
             await roleManager.CreateAsync(new IdentityRole(role));
         }
     }
 
-
-    // Seeding users
-    // Manager
-    await SeedingData.SeedUser( services,
-        new ApiUser {
+    await SeedingData.SeedUser(services,
+        new ApiUser
+        {
+            UserName = "BobSmith@aarhusspaceprogram.com",
             Email = "BobSmith@aarhusspaceprogram.com",
             FullName = "Bob Smith"
         },
@@ -95,9 +125,10 @@ using (var scope = app.Services.CreateScope()) {
         "Manager"
     );
 
-    // Astronaut
-    await SeedingData.SeedUser( services,
-        new ApiUser{
+    await SeedingData.SeedUser(services,
+        new ApiUser
+        {
+            UserName = "NeilArmstrong@aarhusspaceprogram.com",
             Email = "NeilArmstrong@aarhusspaceprogram.com",
             FullName = "Neil Armstrong"
         },
@@ -105,11 +136,10 @@ using (var scope = app.Services.CreateScope()) {
         "Astronaut"
     );
 
-    // Scientist
-    await SeedingData.SeedUser(
-        services,
+    await SeedingData.SeedUser(services,
         new ApiUser
         {
+            UserName = "CarlSagan@aarhusspaceprogram.com",
             Email = "CarlSagan@aarhusspaceprogram.com",
             FullName = "Carl Sagan"
         },
@@ -122,33 +152,43 @@ using (var scope = app.Services.CreateScope()) {
 // ----------------------
 // Middleware
 // ----------------------
-
 if (app.Environment.IsDevelopment())
 {
+    // OpenAPI JSON endpoint
     app.MapOpenApi();
 
+    // Scalar UI
     app.MapScalarApiReference(options =>
     {
-        options.Title = "Space Program API";
+        options.Title = "Aarhus Space Program API";
     });
 
     app.UseDeveloperExceptionPage();
 }
 
-// Add Serilog request logging middleware
 app.UseSerilogRequestLogging();
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
-try {
+
+// ----------------------
+// Run
+// ----------------------
+try
+{
     Log.Information("Starting up application");
     app.Run();
 }
-catch (Exception ex) {
+catch (Exception ex)
+{
     Log.Fatal(ex, "Application failed to start");
 }
-finally {
+finally
+{
     Log.CloseAndFlush();
 }
