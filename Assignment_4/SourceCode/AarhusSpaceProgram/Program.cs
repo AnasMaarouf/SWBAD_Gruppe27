@@ -6,6 +6,8 @@ using Serilog;
 using System.Text;
 using Scalar.AspNetCore;
 using System.IO.Pipelines;
+using MongoDB.Driver;
+using MongoDB.Bson;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,21 +31,21 @@ builder.Host.UseSerilog();
 // ----------------------
 
 // DB Context
-builder.Services.AddDbContext<MainDBContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+builder.Services.AddDbContext<MainDBContext>(options => {
+    options.UseSqlServer(
+            builder.Configuration.GetConnectionString("DefaultConnection"),
+            sql => sql.EnableRetryOnFailure()
+        )
         .EnableSensitiveDataLogging()
-        .LogTo(Log.Information)
-);
+        .LogTo(Log.Information);
+});
 
 // Controllers
 builder.Services.AddControllers();
 
-// ✅ OPENAPI (NO SWAGGER)
 builder.Services.AddOpenApi();
 
-// Background services
-builder.Services.AddHttpClient();
-builder.Services.AddHostedService<ActiveMissionsBackgroundService>();
+
 
 // Identity
 builder.Services.AddIdentity<ApiUser, IdentityRole>(options =>
@@ -88,10 +90,19 @@ builder.Services.AddAuthentication(options =>
 
 
 
+builder.Services.AddSingleton<IMongoClient>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    return new MongoClient(config["MongoDB:ConnectionString"]);
+});
 
-// ----------------------
-// Build app
-// ----------------------
+builder.Services.AddSingleton(sp =>
+{
+    var client = sp.GetRequiredService<IMongoClient>();
+    var db = client.GetDatabase("AarhusSpaceProgramLogDB");
+    return db.GetCollection<BsonDocument>("ActiveMissionsLog");
+});
+
 var app = builder.Build();
 
 
@@ -102,7 +113,30 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
 
+    var dbContext = services.GetRequiredService<MainDBContext>();
+    dbContext.Database.MigrateAsync();
+
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+    var retry = 0;
+    while (retry < 10)
+    {
+        try
+        {
+            if (!await roleManager.RoleExistsAsync("Admin"))
+            {
+                await roleManager.CreateAsync(new IdentityRole("Admin"));
+            }
+
+            break;
+        }
+        catch (Exception ex)
+        {
+            retry++;
+            Console.WriteLine($"DB not ready yet, retry {retry}/10: {ex.Message}");
+            await Task.Delay(3000);
+        }
+    }
 
     string[] roles = { "Admin", "Astronaut", "Scientist", "Manager" };
 

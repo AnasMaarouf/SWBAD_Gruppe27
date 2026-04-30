@@ -13,9 +13,10 @@ public class MissionsController : ControllerBase
     private readonly MainDBContext _context;
     private readonly ILogger<ManagersController> _logger;
     private IMongoCollection<BsonDocument> _logCollection;
-    public MissionsController(MainDBContext context, ILogger<ManagersController> logger) {
+    public MissionsController(MainDBContext context, ILogger<ManagersController> logger, IMongoCollection<BsonDocument> logCollection) {
         _context = context;
         _logger = logger;
+        _logCollection = logCollection;
     }
 
     // GET: api/missions
@@ -109,20 +110,29 @@ public class MissionsController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> GetMission(int id, int limit = 50)
     {
-        var client = new MongoClient("mongodb://localhost:27017");
-        var database = client.GetDatabase("AarhusSpaceProgramLogDB");
-        _logCollection = database.GetCollection<BsonDocument>("ActiveMissionsLog");
+        var filter = Builders<BsonDocument>.Filter.Eq("MissionID", id);
 
-        var missionLogs = await _logCollection
-            .Find(log => log["MissionID"] == id)
-            .SortByDescending(log => log["CreatedAt"])
+        var logs = await _logCollection
+            .Find(filter)
+            .SortByDescending(x => x["CreatedAt"])
             .Limit(limit)
             .ToListAsync();
 
+        if (logs.Count == 0)
+            return NotFound("No mission logs found");
 
-        if (missionLogs == null)
-            return NotFound("No missionlogs found");
-        return Ok(missionLogs);
+        // convert BsonDocument → safe JSON
+        var result = logs.Select(doc => new
+        {
+            Id = doc.GetValue("_id", "").ToString(),
+            MissionID = doc.GetValue("MissionID", 0).ToInt32(),
+            MissionName = doc.GetValue("MissionName", "").AsString,
+            Message = doc.GetValue("Message", "").AsString,
+            CreatedAt = doc.GetValue("CreatedAt").ToUniversalTime(),
+            TimeStamp = doc.GetValue("TimeStamp").ToUniversalTime()
+        });
+
+        return Ok(result);
     }
 
 

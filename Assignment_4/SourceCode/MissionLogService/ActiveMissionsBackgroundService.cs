@@ -1,47 +1,67 @@
 using System.Net.Http.Json;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 public class ActiveMissionsBackgroundService : BackgroundService
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<ActiveMissionsBackgroundService> _logger;
     private readonly IMongoCollection<BsonDocument> _logCollection;
+    private readonly IConfiguration _config;
 
-    public ActiveMissionsBackgroundService( IHttpClientFactory httpClientFactory, ILogger<ActiveMissionsBackgroundService> logger) {
+    public ActiveMissionsBackgroundService(
+        IHttpClientFactory httpClientFactory,
+        ILogger<ActiveMissionsBackgroundService> logger,
+        IConfiguration config)
+    {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
-        var MongoDB_client = new MongoClient("mongodb://localhost:27017");
-        var database = MongoDB_client.GetDatabase("AarhusSpaceProgramLogDB");
+        _config = config;
+
+        var mongoConnection = _config["MongoDB:ConnectionString"];
+
+        if (string.IsNullOrWhiteSpace(mongoConnection))
+            throw new Exception("MongoDB connection string is missing");
+
+        var mongoClient = new MongoClient(mongoConnection);
+        var database = mongoClient.GetDatabase(_config["MongoDB:DatabaseName"] ?? "AarhusSpaceProgramLogDB");
+
         _logCollection = database.GetCollection<BsonDocument>("ActiveMissionsLog");
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-
-        var AarhusSpaceProgramDB_client = _httpClientFactory.CreateClient();
-        AarhusSpaceProgramDB_client.BaseAddress = new Uri("http://localhost:5062");
+        var client = _httpClientFactory.CreateClient();
+        client.BaseAddress = new Uri(_config["WebApi:BaseUrl"]);
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                var missions = await AarhusSpaceProgramDB_client.GetFromJsonAsync<List<MissionResponseDTO>>(
+                var missions = await client.GetFromJsonAsync<List<MissionResponseDTO>>(
                     "/api/missions?status=Active",
                     stoppingToken
                 );
 
                 if (missions == null || missions.Count == 0)
                 {
-                    _logger.LogWarning("No active missions found at {Time}", DateTime.UtcNow);
+                    _logger.LogInformation("No active missions at {Time}", DateTime.UtcNow);
                     await Task.Delay(TimeSpan.FromSeconds(20), stoppingToken);
                     continue;
                 }
 
-                _logger.LogInformation("Fetched {Count} missions at {Time}",
-                    missions.Count, DateTime.UtcNow);
+                _logger.LogInformation("Fetched {Count} active missions", missions.Count);
 
-                foreach (var mission in missions) {
+                foreach (var mission in missions)
+                {
+                    if (mission == null)
+                        continue;
+
+                    var missionId = Convert.ToInt32(mission.Id); // FIX: ensures int consistency
+
                     var document = new BsonDocument
                     {
                         { "MissionID", mission.Id },
@@ -51,20 +71,21 @@ public class ActiveMissionsBackgroundService : BackgroundService
                         { "CreatedAt", DateTime.UtcNow }
                     };
 
-                    try {
+                    try
+                    {
                         await _logCollection.InsertOneAsync(document, cancellationToken: stoppingToken);
-                    } catch {
-                        _logger.LogWarning(
-                            "Failed to create log for mission {MissionId}. Status: {StatusCode}",
-                            mission.Id,
-                            500
-                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex,
+                            "Failed to insert log for MissionID {MissionId}",
+                            missionId);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Background service error while processing missions");
+                _logger.LogError(ex, "Background service crashed while processing missions");
             }
 
             await Task.Delay(TimeSpan.FromSeconds(20), stoppingToken);

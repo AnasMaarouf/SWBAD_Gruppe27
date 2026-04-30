@@ -5,9 +5,6 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel;
 
 public class MainDBContext : IdentityDbContext<ApiUser> {
-    private const string DbName = "AarhusSpaceProgram";
-    private const string ConnectionString = $"Data Source=localhost;Initial Catalog={DbName};User ID=sa;Password=Abcd123456!;Connect Timeout=30;Encrypt=True;Trust Server Certificate=True;Authentication=SqlPassword;Application Intent=ReadWrite;";
-    protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlServer(ConnectionString);
     public MainDBContext(DbContextOptions<MainDBContext> options) : base(options){ }
     
     
@@ -458,7 +455,8 @@ public class MainDBContext : IdentityDbContext<ApiUser> {
         // ----------------------
         modelBuilder.Entity<Rocket>().HasData(
             new Rocket { ID = 1, ModelName = "Falcon 9", FuelCapacity = 500000, CrewCapacity = 7, NumberOfStages = 2, TotalWeight = 549000 },
-            new Rocket { ID = 2, ModelName = "Saturn V", FuelCapacity = 950000, CrewCapacity = 3, NumberOfStages = 3, TotalWeight = 2970000 }
+            new Rocket { ID = 2, ModelName = "Saturn V", FuelCapacity = 950000, CrewCapacity = 3, NumberOfStages = 3, TotalWeight = 2970000 },
+            new Rocket {ID = 3, ModelName = "Ares I-X", FuelCapacity = 650000, CrewCapacity = 4, NumberOfStages = 2, TotalWeight = 800000 }
         );
 
         // ----------------------
@@ -519,6 +517,23 @@ public class MainDBContext : IdentityDbContext<ApiUser> {
                 FK_CrewID = 2,
                 FK_ManagerID = 6,
                 FK_CelestialID = 2
+            },
+            new Mission
+            {
+                ID = 3,
+                Name = "ISS Resupply Alpha",
+                Duration = 30,
+                CurrentStatus = Mission.Status.Active,
+                Type = "Resupply",
+                LaunchDate = new DateOnly(2026, 4, 15),
+
+                
+                FK_RocketID = 3,
+
+                FK_launchpadID = 1,
+                FK_CrewID = 2,
+                FK_ManagerID = 6,
+                FK_CelestialID = 1
             }
         );
 
