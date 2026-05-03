@@ -456,7 +456,8 @@ public class MainDBContext : IdentityDbContext<ApiUser> {
         modelBuilder.Entity<Rocket>().HasData(
             new Rocket { ID = 1, ModelName = "Falcon 9", FuelCapacity = 500000, CrewCapacity = 7, NumberOfStages = 2, TotalWeight = 549000 },
             new Rocket { ID = 2, ModelName = "Saturn V", FuelCapacity = 950000, CrewCapacity = 3, NumberOfStages = 3, TotalWeight = 2970000 },
-            new Rocket {ID = 3, ModelName = "Ares I-X", FuelCapacity = 650000, CrewCapacity = 4, NumberOfStages = 2, TotalWeight = 800000 }
+            new Rocket {ID = 3, ModelName = "Ares I-X", FuelCapacity = 650000, CrewCapacity = 4, NumberOfStages = 2, TotalWeight = 800000 },
+            new Rocket {ID = 4, ModelName = "Ares II", FuelCapacity = 600000, CrewCapacity = 4, NumberOfStages = 2, TotalWeight = 820000 }
         );
 
         // ----------------------

@@ -51,6 +51,9 @@ public class MissionsController : ControllerBase
     [Authorize(Roles = "Astronaut, Manager, Admin")]
     public async Task<ActionResult<IEnumerable<Mission>>> GetMissions(string TargetCelestialBody) {
         var missions = await _context.Missions
+        .Include(m => m.AssignedRocket)
+        .Include(m => m.manager)
+        .Include(m => m.launchpad)
         .Include(m => m.celestialBody)
         .Select(dto => new MissionResponseDTO {
             Id = dto.ID,
@@ -62,7 +65,7 @@ public class MissionsController : ControllerBase
             LaunchpadLocation = dto.launchpad.Location
         }).Where(m => m.Target_CelestialBodyName == TargetCelestialBody).ToListAsync();
         
-        if (missions == null)
+        if (!missions.Any())
             return NotFound("No missions found");
 
         return Ok(missions);
@@ -147,7 +150,7 @@ public class MissionsController : ControllerBase
                     m.FK_launchpadID == dto.LaunchpadId
                 );
 
-            if(LaunchPadExists == null) {
+            if(!LaunchPadExists) {
                 var timestamp = new DateTimeOffset(DateTime.UtcNow);
                 var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 404, Timestamp = timestamp };
                 _logger.LogInformation("Request called {@LogInfo}", logInfo);
@@ -175,7 +178,7 @@ public class MissionsController : ControllerBase
         var ManagerExists = await _context.Managers
                 .AnyAsync(m => m.ID == dto.ManagerId);
 
-        if (ManagerExists == null) {
+        if (!ManagerExists) {
             var timestamp = new DateTimeOffset(DateTime.UtcNow);
             var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 404, Timestamp = timestamp };
             _logger.LogInformation("Request called {@LogInfo}", logInfo);
@@ -198,7 +201,7 @@ public class MissionsController : ControllerBase
         var celestialBodyExists = await _context.CelestialBodies
                 .AnyAsync(r => r.ID == dto.CelestialBodyId);
 
-        if (celestialBodyExists == null) {
+        if (!celestialBodyExists) {
             // Logging
             var timestamp = new DateTimeOffset(DateTime.UtcNow);
             var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 404, Timestamp = timestamp };
@@ -245,7 +248,7 @@ public class MissionsController : ControllerBase
                     m.FK_launchpadID == dto.LaunchpadId
                 );
 
-            if(LaunchPadExists == null) {
+            if(!LaunchPadExists) {
                 var timestamp = new DateTimeOffset(DateTime.UtcNow);
                 var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 404, Timestamp = timestamp };
                 _logger.LogInformation("Request called {@LogInfo}", logInfo);
@@ -274,7 +277,7 @@ public class MissionsController : ControllerBase
         var ManagerExists = await _context.Managers
                 .AnyAsync(m => m.ID == dto.ManagerId);
 
-        if (ManagerExists == null) {
+        if (!ManagerExists) {
             var timestamp = new DateTimeOffset(DateTime.UtcNow);
             var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 404, Timestamp = timestamp };
             _logger.LogInformation("Request called {@LogInfo}", logInfo);
@@ -297,10 +300,10 @@ public class MissionsController : ControllerBase
 
        
 
-        var celestialBodyExists = await _context.CelestialBodies
-                .AnyAsync(CB => CB.ID == dto.CelestialBodyId && CB.ID != dto.CelestialBodyId);
+        var celestialExists = await _context.CelestialBodies
+            .AnyAsync(cb => cb.ID == dto.CelestialBodyId);
 
-        if (celestialBodyExists == null) {
+        if (!celestialExists) {
             // Logging
             var timestamp = new DateTimeOffset(DateTime.UtcNow);
             var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 404, Timestamp = timestamp };
@@ -371,7 +374,7 @@ public class MissionsController : ControllerBase
     public IActionResult AssignCrewToMission(int id, AddCrewToMissionDTO dto)
     {
         var mission = _context.Missions.Find(id);
-        var crew = _context.Crews.Find(id);
+        var crew = _context.Crews.Find(dto.CrewID);
 
         if (mission == null || crew == null) {
             // Logging
@@ -412,7 +415,7 @@ public class MissionsController : ControllerBase
 
             return NotFound("mission doesn't exist");
         }
-        if (mission.crew == crew || mission.FK_CrewID == dto.CrewID){
+        if (mission.FK_CrewID == dto.CrewID){
             // Logging
             var timestamp = new DateTimeOffset(DateTime.UtcNow);
             var logInfo = new { Method = "POST", Path = Request.Path, StatusCode = 400, Timestamp = timestamp };
